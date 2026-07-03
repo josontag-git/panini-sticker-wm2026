@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Joni's Panini Sticker</title>
+<meta name="theme-color" content="#1565c0" />
+<meta name="description" content="Sammel-Uebersicht fuer Panini WM 2026 Sticker: Habe, Doppelt, Fehlt." />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/favicon-32.png" />
+<link rel="apple-touch-icon" href="icons/icon-180.png" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header class="app-header">
+  <div class="header-top">
+    <img class="app-logo" src="icons/icon-192.png" alt="" />
+    <div>
+      <h1>Joni's Panini Sticker</h1>
+      <p class="subtitle">WM 2026 &middot; Sammelalbum</p>
+    </div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="progress-label" id="progress-label">0 / 0 Sticker</div>
+  </div>
+  <div class="stats-row">
+    <div class="stat stat-owned"><span id="stat-owned">0</span><label>Habe</label></div>
+    <div class="stat stat-duplicate"><span id="stat-duplicate">0</span><label>Doppelt</label></div>
+    <div class="stat stat-missing"><span id="stat-missing">0</span><label>Fehlt</label></div>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button class="tab-btn active" data-tab="album">Album</button>
+  <button class="tab-btn" data-tab="listen">Listen</button>
+  <button class="tab-btn" data-tab="einstellungen">Mehr</button>
+</nav>
+
+<main>
+  <section id="tab-album" class="tab-panel active">
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="Sticker-Nr. oder Team suchen..." autocomplete="off" />
+      <div class="filter-chips" id="filter-chips">
+        <button class="chip active" data-filter="all">Alle</button>
+        <button class="chip" data-filter="owned">Habe</button>
+        <button class="chip" data-filter="duplicate">Doppelt</button>
+        <button class="chip" data-filter="missing">Fehlt</button>
+      </div>
+    </div>
+    <p class="hint">Tippen zum Wechseln: Fehlt &rarr; Habe &rarr; Doppelt &rarr; Fehlt</p>
+    <div id="groups"></div>
+    <p class="empty-state" id="empty-state" hidden>Keine Sticker gefunden.</p>
+  </section>
+
+  <section id="tab-listen" class="tab-panel">
+    <div class="list-card">
+      <div class="list-card-head">
+        <h2>Fehlliste</h2>
+        <button class="copy-btn" data-copy="missing">Kopieren</button>
+      </div>
+      <p class="list-card-sub">Sticker, die dir noch fehlen &ndash; ideal zum Nachkaufen.</p>
+      <div class="chip-list" id="missing-list"></div>
+    </div>
+    <div class="list-card">
+      <div class="list-card-head">
+        <h2>Tauschliste</h2>
+        <button class="copy-btn" data-copy="duplicate">Kopieren</button>
+      </div>
+      <p class="list-card-sub">Deine Doppelten &ndash; zum Tauschen mit Freunden.</p>
+      <div class="chip-list" id="duplicate-list"></div>
+    </div>
+  </section>
+
+  <section id="tab-einstellungen" class="tab-panel">
+    <div class="list-card">
+      <h2>Daten</h2>
+      <div class="settings-row">
+        <button class="btn" id="btn-export">Sicherung exportieren</button>
+        <button class="btn" id="btn-import">Sicherung importieren</button>
+        <input type="file" id="file-import" accept="application/json" hidden />
+      </div>
+      <div class="settings-row">
+        <button class="btn btn-danger" id="btn-reset">Fortschritt zuruecksetzen</button>
+      </div>
+    </div>
+    <div class="list-card">
+      <h2>Info</h2>
+      <p class="list-card-sub">
+        Diese Kaderliste ist eine generische Platzhalter-Struktur (48 Teams in 12 Gruppen, je 14 Sticker)
+        und keine offizielle Panini-Checkliste der FIFA WM 2026. Alle Daten werden nur lokal auf diesem Geraet gespeichert.
+      </p>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
