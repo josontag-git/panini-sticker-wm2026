@@ -132,20 +132,7 @@ body {
 
 .hint { font-size: 0.72rem; color: var(--text-muted); margin: 10px 2px 14px; }
 
-.group-block { margin-bottom: 18px; }
-.group-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 4px;
-  cursor: pointer;
-}
-.group-head h2 { font-size: 0.95rem; margin: 0; }
-.group-fraction { font-size: 0.78rem; color: var(--text-muted); }
-.group-body { display: block; }
-.group-body.collapsed { display: none; }
-
-.team-block { margin-bottom: 14px; }
+.team-block { margin-bottom: 18px; }
 .team-head {
   display: flex;
   align-items: center;

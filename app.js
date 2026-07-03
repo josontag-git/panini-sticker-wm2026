@@ -3,6 +3,7 @@ const STORAGE_SCRIPT_URL = "panini-wm26-script-url";
 const STORAGE_DIRTY = "panini-wm26-dirty-v1";
 const STATUS_CYCLE = { missing: "owned", owned: "duplicate", duplicate: "missing" };
 const STATUS_LABEL = { missing: "Fehlt", owned: "Habe", duplicate: "Doppelt" };
+const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby0hA1vkJIGtZdNwk7jdTrBHgLL5_sO2DXAnxh5NKOnC8gFJz8_KyTDSh_wGkC7ODM8/exec";
 
 let state = loadState();
 let activeFilter = "all";
@@ -33,7 +34,8 @@ function setStatus(id, status) {
 // ---------- Google Sheet Sync ----------
 
 function getScriptUrl() {
-  return localStorage.getItem(STORAGE_SCRIPT_URL) || "";
+  const stored = localStorage.getItem(STORAGE_SCRIPT_URL);
+  return stored !== null ? stored : DEFAULT_SCRIPT_URL;
 }
 
 function setScriptUrl(url) {
@@ -79,7 +81,7 @@ async function syncSticker(id) {
       body: JSON.stringify({
         id: sticker.id,
         number: sticker.number,
-        groupId: sticker.groupId,
+        teamCode: sticker.teamCode,
         teamName: sticker.teamName,
         type: sticker.type,
         label: sticker.label,
@@ -113,47 +115,29 @@ function buildAlbum() {
   const container = document.getElementById("groups");
   container.innerHTML = "";
 
-  for (const group of GROUPS) {
-    const groupStickers = STICKERS.filter((s) => s.groupId === group.id);
-    const groupBlock = document.createElement("div");
-    groupBlock.className = "group-block";
-    groupBlock.dataset.groupId = group.id;
+  for (const team of TEAMS) {
+    const teamStickers = STICKERS.filter((s) => s.teamCode === team.code);
+    const teamBlock = document.createElement("div");
+    teamBlock.className = "team-block";
+    teamBlock.dataset.teamCode = team.code;
 
-    const head = document.createElement("div");
-    head.className = "group-head";
-    head.innerHTML = `<h2>Gruppe ${group.id}</h2><span class="group-fraction" data-role="group-fraction"></span>`;
-    const body = document.createElement("div");
-    body.className = "group-body";
-    head.addEventListener("click", () => body.classList.toggle("collapsed"));
+    const teamHead = document.createElement("div");
+    teamHead.className = "team-head";
+    teamHead.innerHTML = `
+      <span class="team-badge" style="background:${teamColor(team.code)}">${team.code}</span>
+      <span class="team-name">${team.name}</span>
+      <span class="team-fraction" data-role="team-fraction"></span>
+    `;
 
-    for (const team of group.teams) {
-      const teamStickers = groupStickers.filter((s) => s.teamCode === team.code);
-      const teamBlock = document.createElement("div");
-      teamBlock.className = "team-block";
-      teamBlock.dataset.teamCode = team.code;
-
-      const teamHead = document.createElement("div");
-      teamHead.className = "team-head";
-      teamHead.innerHTML = `
-        <span class="team-badge" style="background:${teamColor(team.code)}">${team.code}</span>
-        <span class="team-name">${team.name}</span>
-        <span class="team-fraction" data-role="team-fraction"></span>
-      `;
-
-      const grid = document.createElement("div");
-      grid.className = "sticker-grid";
-      for (const sticker of teamStickers) {
-        grid.appendChild(buildStickerEl(sticker));
-      }
-
-      teamBlock.appendChild(teamHead);
-      teamBlock.appendChild(grid);
-      body.appendChild(teamBlock);
+    const grid = document.createElement("div");
+    grid.className = "sticker-grid";
+    for (const sticker of teamStickers) {
+      grid.appendChild(buildStickerEl(sticker));
     }
 
-    groupBlock.appendChild(head);
-    groupBlock.appendChild(body);
-    container.appendChild(groupBlock);
+    teamBlock.appendChild(teamHead);
+    teamBlock.appendChild(grid);
+    container.appendChild(teamBlock);
   }
 }
 
@@ -218,18 +202,6 @@ function applyFilters() {
     if (fractionEl) fractionEl.textContent = `${owned.length}/${total.length}`;
   });
 
-  document.querySelectorAll(".group-block").forEach((groupEl) => {
-    const visibleTeams = [...groupEl.querySelectorAll(".team-block")].filter((t) => !t.hidden);
-    groupEl.hidden = visibleTeams.length === 0;
-    let owned = 0, total = 0;
-    groupEl.querySelectorAll(".sticker").forEach((s) => {
-      total++;
-      if (statusOf(s.dataset.id) !== "missing") owned++;
-    });
-    const fractionEl = groupEl.querySelector('[data-role="group-fraction"]');
-    if (fractionEl) fractionEl.textContent = `${owned}/${total}`;
-  });
-
   document.getElementById("empty-state").hidden = anyVisible;
 }
 
@@ -260,7 +232,8 @@ function updateStats() {
   const collected = owned + duplicate;
   const missing = total - collected;
 
-  document.getElementById("stat-owned").textContent = owned;
+  // "Habe" zaehlt auch Doppelte mit - man besitzt den Sticker ja trotzdem.
+  document.getElementById("stat-owned").textContent = collected;
   document.getElementById("stat-duplicate").textContent = duplicate;
   document.getElementById("stat-missing").textContent = missing;
   document.getElementById("progress-label").textContent = `${collected} / ${total} Sticker`;
@@ -284,7 +257,7 @@ function renderLists() {
     for (const s of missing) {
       const tag = document.createElement("span");
       tag.className = "tag";
-      tag.textContent = `${s.number} ${s.teamCode}`;
+      tag.textContent = `${s.teamCode} ${s.number}`;
       missingEl.appendChild(tag);
     }
   }
@@ -295,7 +268,7 @@ function renderLists() {
     for (const s of duplicate) {
       const tag = document.createElement("span");
       tag.className = "tag";
-      tag.textContent = `${s.number} ${s.teamCode}`;
+      tag.textContent = `${s.teamCode} ${s.number}`;
       duplicateEl.appendChild(tag);
     }
   }

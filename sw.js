@@ -1,4 +1,4 @@
-const CACHE_NAME = "panini-sticker-v2";
+const CACHE_NAME = "panini-sticker-v3";
 const ASSETS = ["./", "index.html", "style.css", "app.js", "data.js", "manifest.json"];
 
 self.addEventListener("install", (event) => {

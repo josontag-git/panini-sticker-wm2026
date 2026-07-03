@@ -1,83 +1,60 @@
-// Platzhalter-Struktur fuer das WM-2026-Album: 12 Gruppen (A-L) mit je 4 Teams,
-// pro Team 14 Sticker (Logo, Mannschaftsfoto, 12 Spielerpositionen).
-// Dies ist KEINE offizielle Panini-Checkliste, sondern eine generische Vorlage.
+// Team-Liste gemaess WM-2026-Checkliste (48 Teams, alphabetisch, je 20 Sticker).
+// Die genaue Zusammensetzung der 20 Sticker pro Team (Logo, Foto, Spielerpositionen)
+// ist eine generische Platzhalter-Aufteilung, keine offizielle Panini-Checkliste.
 
-const GROUPS = [
-  { id: "A", teams: [
-    { code: "MEX", name: "Mexiko" },
-    { code: "USA", name: "USA" },
-    { code: "CAN", name: "Kanada" },
-    { code: "PAN", name: "Panama" },
-  ]},
-  { id: "B", teams: [
-    { code: "ARG", name: "Argentinien" },
-    { code: "BRA", name: "Brasilien" },
-    { code: "URU", name: "Uruguay" },
-    { code: "ECU", name: "Ecuador" },
-  ]},
-  { id: "C", teams: [
-    { code: "FRA", name: "Frankreich" },
-    { code: "ENG", name: "England" },
-    { code: "ESP", name: "Spanien" },
-    { code: "GER", name: "Deutschland" },
-  ]},
-  { id: "D", teams: [
-    { code: "POR", name: "Portugal" },
-    { code: "NED", name: "Niederlande" },
-    { code: "BEL", name: "Belgien" },
-    { code: "ITA", name: "Italien" },
-  ]},
-  { id: "E", teams: [
-    { code: "CRO", name: "Kroatien" },
-    { code: "COL", name: "Kolumbien" },
-    { code: "MAR", name: "Marokko" },
-    { code: "SEN", name: "Senegal" },
-  ]},
-  { id: "F", teams: [
-    { code: "JPN", name: "Japan" },
-    { code: "KOR", name: "Suedkorea" },
-    { code: "AUS", name: "Australien" },
-    { code: "IRN", name: "Iran" },
-  ]},
-  { id: "G", teams: [
-    { code: "KSA", name: "Saudi-Arabien" },
-    { code: "QAT", name: "Katar" },
-    { code: "CHI", name: "Chile" },
-    { code: "PER", name: "Peru" },
-  ]},
-  { id: "H", teams: [
-    { code: "SUI", name: "Schweiz" },
-    { code: "DEN", name: "Daenemark" },
-    { code: "SWE", name: "Schweden" },
-    { code: "POL", name: "Polen" },
-  ]},
-  { id: "I", teams: [
-    { code: "SRB", name: "Serbien" },
-    { code: "AUT", name: "Oesterreich" },
-    { code: "UKR", name: "Ukraine" },
-    { code: "TUN", name: "Tunesien" },
-  ]},
-  { id: "J", teams: [
-    { code: "ALG", name: "Algerien" },
-    { code: "NGA", name: "Nigeria" },
-    { code: "GHA", name: "Ghana" },
-    { code: "CMR", name: "Kamerun" },
-  ]},
-  { id: "K", teams: [
-    { code: "EGY", name: "Aegypten" },
-    { code: "CRC", name: "Costa Rica" },
-    { code: "JAM", name: "Jamaika" },
-    { code: "NZL", name: "Neuseeland" },
-  ]},
-  { id: "L", teams: [
-    { code: "NOR", name: "Norwegen" },
-    { code: "TUR", name: "Tuerkei" },
-    { code: "WAL", name: "Wales" },
-    { code: "SCO", name: "Schottland" },
-  ]},
+const TEAMS = [
+  { code: "EGY", name: "Ägypten" },
+  { code: "ALG", name: "Algerien" },
+  { code: "ARG", name: "Argentinien" },
+  { code: "AUS", name: "Australien" },
+  { code: "BEL", name: "Belgien" },
+  { code: "BIH", name: "Bosnien-Herzegowina" },
+  { code: "BRA", name: "Brasilien" },
+  { code: "CUW", name: "Curaçao" },
+  { code: "COD", name: "DR Kongo" },
+  { code: "GER", name: "Deutschland" },
+  { code: "ECU", name: "Ecuador" },
+  { code: "CIV", name: "Elfenbeinküste" },
+  { code: "ENG", name: "England" },
+  { code: "FRA", name: "Frankreich" },
+  { code: "GHA", name: "Ghana" },
+  { code: "HAI", name: "Haiti" },
+  { code: "IRQ", name: "Irak" },
+  { code: "IRN", name: "Iran" },
+  { code: "JPN", name: "Japan" },
+  { code: "JOR", name: "Jordanien" },
+  { code: "CAN", name: "Kanada" },
+  { code: "CPV", name: "Kap Verde" },
+  { code: "QAT", name: "Katar" },
+  { code: "COL", name: "Kolumbien" },
+  { code: "CRO", name: "Kroatien" },
+  { code: "MAR", name: "Marokko" },
+  { code: "MEX", name: "Mexiko" },
+  { code: "NZL", name: "Neuseeland" },
+  { code: "NED", name: "Niederlande" },
+  { code: "NOR", name: "Norwegen" },
+  { code: "AUT", name: "Österreich" },
+  { code: "PAN", name: "Panama" },
+  { code: "PAR", name: "Paraguay" },
+  { code: "POR", name: "Portugal" },
+  { code: "KSA", name: "Saudi-Arabien" },
+  { code: "SCO", name: "Schottland" },
+  { code: "SWE", name: "Schweden" },
+  { code: "SUI", name: "Schweiz" },
+  { code: "SEN", name: "Senegal" },
+  { code: "ESP", name: "Spanien" },
+  { code: "RSA", name: "Südafrika" },
+  { code: "KOR", name: "Südkorea" },
+  { code: "CZE", name: "Tschechien" },
+  { code: "TUN", name: "Tunesien" },
+  { code: "TUR", name: "Türkei" },
+  { code: "USA", name: "USA" },
+  { code: "URU", name: "Uruguay" },
+  { code: "UZB", name: "Usbekistan" },
 ];
 
-const POSITIONS = ["TW", "ABW", "ABW", "ABW", "ABW", "MF", "MF", "MF", "MF", "ST", "ST", "ST"];
+// 20 Sticker pro Team: Logo, Mannschaftsfoto, 18 Spieler (2 TW, 6 ABW, 6 MF, 4 ST)
+const POSITIONS = ["TW", "TW", "ABW", "ABW", "ABW", "ABW", "ABW", "ABW", "MF", "MF", "MF", "MF", "MF", "MF", "ST", "ST", "ST", "ST"];
 
 function teamColor(code) {
   let hash = 0;
@@ -88,27 +65,24 @@ function teamColor(code) {
 
 function generateStickers() {
   const stickers = [];
-  let n = 1;
-  for (const group of GROUPS) {
-    for (const team of group.teams) {
-      const slots = [
-        { type: "badge", label: "Team-Logo" },
-        { type: "team", label: "Mannschaftsfoto" },
-        ...POSITIONS.map((pos, i) => ({ type: "player", label: `Spieler ${i + 1}`, position: pos })),
-      ];
-      for (const slot of slots) {
-        const number = String(n).padStart(3, "0");
-        stickers.push({
-          id: `${team.code}-${number}`,
-          number,
-          groupId: group.id,
-          teamCode: team.code,
-          teamName: team.name,
-          color: teamColor(team.code),
-          ...slot,
-        });
-        n++;
-      }
+  for (const team of TEAMS) {
+    const slots = [
+      { type: "badge", label: "Team-Logo" },
+      { type: "team", label: "Mannschaftsfoto" },
+      ...POSITIONS.map((pos, i) => ({ type: "player", label: `Spieler ${i + 1}`, position: pos })),
+    ];
+    let n = 1;
+    for (const slot of slots) {
+      const number = String(n).padStart(2, "0");
+      stickers.push({
+        id: `${team.code}-${number}`,
+        number,
+        teamCode: team.code,
+        teamName: team.name,
+        color: teamColor(team.code),
+        ...slot,
+      });
+      n++;
     }
   }
   return stickers;

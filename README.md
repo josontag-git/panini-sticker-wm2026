@@ -2,7 +2,7 @@
 
 Progressive Web App zur schnellen Uebersicht ueber die Panini-WM-2026-Sticker-Sammlung: welche Sticker man hat, welche doppelt sind (zum Tauschen) und welche noch fehlen.
 
-Die Team-/Sticker-Liste ist eine generische Platzhalter-Struktur (48 Teams in 12 Gruppen, je 14 Sticker) und keine offizielle Panini-Checkliste.
+Die Team-Liste (48 Teams, je 20 Sticker) orientiert sich am WM-2026-Teilnehmerfeld. Die Aufteilung der 20 Sticker pro Team (Logo, Mannschaftsfoto, Spielerpositionen) ist eine generische Platzhalter-Struktur, keine offizielle Panini-Checkliste.
 
 ## Nutzung auf dem Handy
 
@@ -12,7 +12,7 @@ Die Team-/Sticker-Liste ist eine generische Platzhalter-Struktur (48 Teams in 12
 
 ## Bedienung
 
-- Im Tab **Album** auf einen Sticker tippen, um den Status zu wechseln: Fehlt → Habe → Doppelt → Fehlt.
+- Im Tab **Album** auf einen Sticker tippen, um den Status zu wechseln: Fehlt → Habe → Doppelt → Fehlt. Doppelte zaehlen in der Kopfzeile auch unter "Habe" mit, da man den Sticker ja trotzdem besitzt.
 - Suche und Filter-Chips helfen, schnell einzelne Teams oder Sticker-Nummern zu finden.
 - Im Tab **Listen** gibt es eine Fehlliste (zum Nachkaufen) und eine Tauschliste (Doppelte), beide mit "Kopieren"-Button.
 - Im Tab **Mehr** koennen Sicherungen exportiert/importiert und der Fortschritt zurueckgesetzt werden.
