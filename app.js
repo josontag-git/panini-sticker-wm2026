@@ -190,7 +190,11 @@ function applyFilters() {
       const status = statusOf(s.dataset.id);
       total.push(s);
       if (status !== "missing") owned.push(s);
-      const matchesFilter = activeFilter === "all" || status === activeFilter;
+      // "Habe" umfasst auch Doppelte - passend zur Kopfzeilen-Summe.
+      const matchesFilter =
+        activeFilter === "all" ||
+        status === activeFilter ||
+        (activeFilter === "owned" && status === "duplicate");
       const matchesSearch = !term || s.dataset.number.includes(term) || s.dataset.team.includes(term);
       const visible = matchesFilter && matchesSearch;
       s.hidden = !visible;
