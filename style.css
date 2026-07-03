@@ -172,6 +172,7 @@ body {
   opacity: 0.6;
 }
 .sticker:active { transform: scale(0.94); }
+.sticker[hidden] { display: none; }
 
 .sticker .num {
   font-size: 0.62rem;
