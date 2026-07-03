@@ -31,10 +31,13 @@ function doGet(e) {
   if (lastRow > 1) {
     const rows = sheet.getRange(2, 1, lastRow - 1, HEADERS.length).getValues();
     for (const row of rows) {
-      if (!row[0]) continue;
+      // Vorsicht: Sticker-ID "0" wird von Sheets als Zahl 0 gespeichert, was
+      // in JS falsy ist - daher explizit auf leeren String pruefen statt !row[0].
+      const id = String(row[0]);
+      if (id === "") continue;
       stickers.push({
-        id: row[0],
-        number: row[1] || row[0],
+        id: id,
+        number: row[1] ? String(row[1]) : id,
         title: row[2] || "",
         area: row[3] || "",
         type: row[4] || "-",
@@ -68,7 +71,7 @@ function deleteStickerRow(id) {
   if (lastRow > 1) {
     const ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
     for (let i = 0; i < ids.length; i++) {
-      if (ids[i][0] === id) {
+      if (String(ids[i][0]) === String(id)) {
         sheet.deleteRow(i + 2);
         return;
       }
@@ -106,7 +109,7 @@ function upsertRow(sheet, id, row) {
   if (lastRow > 1) {
     const ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
     for (let i = 0; i < ids.length; i++) {
-      if (ids[i][0] === id) {
+      if (String(ids[i][0]) === String(id)) {
         sheet.getRange(i + 2, 1, 1, row.length).setValues([row]);
         return;
       }
@@ -121,6 +124,9 @@ function getOrCreateSheet(name, headers) {
   if (!sheet) {
     sheet = ss.insertSheet(name);
     sheet.appendRow(headers);
+    // ID-Spalte als Text formatieren, damit z.B. "0" nicht als Zahl 0
+    // interpretiert wird (siehe doGet).
+    sheet.getRange("A:A").setNumberFormat("@");
   }
   return sheet;
 }
