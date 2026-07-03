@@ -36,12 +36,15 @@ Die Stickerliste basiert auf einer vom Nutzer bereitgestellten Checkliste: 48 Te
 3. Ab jetzt wird jede Statusänderung (Fehlt/Habe/Doppelt) automatisch als Zeile ins Tabellenblatt "Sticker" geschrieben (anhand der Sticker-ID aktualisiert, keine Duplikate).
 4. Der Button "Jetzt synchronisieren" schickt alle noch nicht übertragenen Änderungen erneut (z. B. nach Offline-Nutzung).
 5. Der Button "Vom Sheet laden" holt den aktuellen Stand aus dem Sheet und übernimmt ihn lokal — das passiert auch automatisch beim Öffnen der App sowie per Pull-to-Refresh (an oberster Stelle nach unten ziehen).
+6. Der Button "Komplette Liste ins Sheet hochladen" ersetzt den kompletten Sheet-Inhalt durch die aktuelle lokale Stickerliste. **Einmalig direkt nach dem Einrichten ausführen**, damit das Sheet von Anfang an alle Sticker enthält (siehe Hinweis unten).
 
 Die Synchronisierung ist zweiseitig: Änderungen werden zum Sheet hochgeladen, und beim Öffnen bzw. per "Vom Sheet laden" wird der Sheet-Stand auch wieder abgeglichen. So bleiben mehrere Geräte (z. B. Handy und Desktop) konsistent, solange beide mit demselben Sheet verbunden sind. Noch nicht hochgeladene lokale Änderungen werden beim Abgleich nicht überschrieben — synchronisiere daher zuerst, bevor du auf einem anderen Gerät weitersammelst.
 
-Synchronisiert wird nicht nur der Sammelstatus, sondern auch der **Admin-Bereich**: Wird ein Sticker auf einem Gerät hinzugefügt, bearbeitet oder gelöscht, übernehmen andere Geräte das beim nächsten Abgleich ebenfalls. Gelöschte Sticker werden im Sheet als "Geloescht" markiert (Tombstone), damit auch Geräte, die den Sticker vorher nie gesehen haben, die Löschung zuverlässig mitbekommen.
+**Das Sheet führt die komplette Stickerliste**, nicht nur den Sammelstatus: Sticker, die im Admin-Bereich hinzugefügt, bearbeitet oder gelöscht werden, werden ebenfalls hochgeladen bzw. beim Abgleich übernommen. Ein Sticker, der lokal existiert, aber nicht im Sheet auftaucht, gilt als anderswo gelöscht und wird entfernt.
 
-**Wichtig:** Falls du `Code.gs` bereits früher eingerichtet hattest, muss es erneut aktualisiert werden (neue Spalte "Geloescht") — siehe Schritt 3 oben, danach erneut als neue Version bereitstellen.
+**Sicherheitsnetz:** Damit ein noch nicht vollständig befülltes Sheet (z. B. direkt nach dem Einrichten, wenn es nur einzelne, organisch entstandene Zeilen enthält) nicht versehentlich fast die ganze lokale Liste löscht, wird die "Sticker fehlt im Sheet → lokal entfernen"-Logik erst aktiv, sobald das Sheet mindestens die Hälfte der bekannten Sticker enthält. Nutze daher **"Komplette Liste ins Sheet hochladen"** einmalig, um das Sheet direkt vollständig zu befüllen.
+
+**Wichtig:** Falls du `Code.gs` bereits früher eingerichtet hattest, muss es erneut aktualisiert werden (Schema hat sich geändert) — siehe Schritt 3 oben, danach erneut als neue Version bereitstellen.
 
 ## Hosting (GitHub Pages)
 

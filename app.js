@@ -178,9 +178,9 @@ async function syncSticker(id) {
   }
 }
 
-// Loescht einen Sticker auf dem Sheet (Tombstone), damit andere Geraete die
-// Loeschung beim naechsten Abgleich uebernehmen. Wird ueber ein eigenes
-// pending-deletes-Set nachverfolgt, da der Sticker lokal bereits entfernt ist.
+// Loescht einen Sticker auf dem Sheet, damit andere Geraete die Loeschung
+// beim naechsten Abgleich uebernehmen. Wird ueber ein eigenes pending-deletes-
+// Set nachverfolgt, da der Sticker lokal bereits entfernt ist.
 async function syncStickerDelete(id) {
   const url = getScriptUrl();
   if (!url) return;
@@ -197,6 +197,26 @@ async function syncStickerDelete(id) {
   }
 }
 
+// Laedt die komplette lokale Stickerliste (inkl. aktuellem Sammelstatus) in
+// einem Rutsch ins Sheet hoch und ersetzt dort den kompletten Bestand. Dient
+// zum initialen Befuellen des Sheets sowie zum vollstaendigen Neuabgleich.
+async function pushAllStickersToSheet() {
+  const url = getScriptUrl();
+  if (!url) return false;
+  const payload = stickers.map((s) => ({ ...s, status: statusOf(s.id) }));
+  try {
+    await fetch(url, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "bulkUpsert", stickers: payload }),
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function flushDirty() {
   for (const id of loadDirty()) {
     await syncSticker(id);
@@ -209,6 +229,12 @@ async function flushPendingDeletes() {
   }
 }
 
+// Das Sheet ist die vollstaendige Quelle fuer die Stickerliste (genau wie
+// beim Sammelstatus): jeder Browser gleicht sich beim Start und per
+// "Vom Sheet laden" auf exakt diesen Stand ab. Sticker, die lokal existieren
+// aber nicht (mehr) im Sheet sind, wurden anderswo geloescht und werden
+// ebenfalls entfernt - ausser sie haben noch nicht hochgeladene lokale
+// Aenderungen (dirty/pending-deletes), die haben Vorrang.
 async function pullFromSheet() {
   const url = getScriptUrl();
   if (!url) return false;
@@ -220,30 +246,26 @@ async function pullFromSheet() {
 
     const dirty = new Set(loadDirty());
     const pendingDeletes = new Set(loadPendingDeletes());
+    // Aeltere Code.gs-Deployments liefern nur {id, status} zurueck (kein
+    // Titel/Bereich/Kapitel). Nur mit vollstaendigem Schema wird die
+    // Stickerliste selbst abgeglichen (Hinzufuegen/Aendern) - sonst
+    // ausschliesslich der Sammelstatus, um keine Definitionen mit
+    // Leerstrings zu ueberschreiben.
+    const remoteHasFullSchema = data.stickers.length > 0 && "title" in data.stickers[0];
+    // Sicherheitsnetz gegen Massen-Loeschung: Solange das Sheet nicht
+    // erkennbar die vollstaendige Liste enthaelt (z.B. weil es noch nicht per
+    // "Komplette Liste ins Sheet hochladen" befuellt wurde, sondern nur
+    // organisch durch einzelne Statusaenderungen gewachsen ist), wird die
+    // "Sticker fehlt im Sheet -> lokal entfernen"-Logik nicht angewendet.
+    const remoteLooksComplete = data.stickers.length >= DEFAULT_STICKERS.length * 0.5;
+    const remoteIds = new Set();
     let changed = false;
 
     for (const row of data.stickers) {
-      // Noch nicht hochgeladene lokale Aenderungen (Status/Definition/Loeschung)
-      // haben Vorrang, damit ein Abgleich sie nicht ueberschreibt.
+      remoteIds.add(row.id);
       if (dirty.has(row.id) || pendingDeletes.has(row.id)) continue;
 
-      // Aeltere Code.gs-Deployments liefern nur {id, status} zurueck (kein
-      // Titel/Bereich/Kapitel/Geloescht). Ohne diese Pruefung wuerden fehlende
-      // Felder lokale Sticker-Definitionen mit Leerstrings ueberschreiben.
-      // Solange nicht auf die neue Version aktualisiert wurde, wird daher nur
-      // der Status abgeglichen.
-      const hasFullDefinition = "title" in row && "area" in row && "section" in row;
-
-      if (hasFullDefinition && row.deleted) {
-        if (stickers.some((s) => s.id === row.id)) {
-          stickers = stickers.filter((s) => s.id !== row.id);
-          changed = true;
-        }
-        deleteStatusKey(row.id);
-        continue;
-      }
-
-      if (hasFullDefinition) {
+      if (remoteHasFullSchema) {
         const remoteDef = {
           id: row.id,
           number: row.number || row.id,
@@ -269,6 +291,18 @@ async function pullFromSheet() {
 
       if (statusOf(row.id) !== row.status) {
         setStatus(row.id, row.status);
+        changed = true;
+      }
+    }
+
+    if (remoteHasFullSchema && remoteLooksComplete) {
+      const toRemove = stickers.filter(
+        (s) => !remoteIds.has(s.id) && !dirty.has(s.id) && !pendingDeletes.has(s.id)
+      );
+      if (toRemove.length) {
+        const removeIds = new Set(toRemove.map((s) => s.id));
+        stickers = stickers.filter((s) => !removeIds.has(s.id));
+        for (const id of removeIds) deleteStatusKey(id);
         changed = true;
       }
     }
@@ -731,6 +765,17 @@ document.getElementById("btn-pull-sheet").addEventListener("click", async () => 
   }
   const ok = await pullFromSheet();
   showToast(ok ? "Stand vom Sheet geladen" : "Laden vom Sheet fehlgeschlagen");
+});
+
+document.getElementById("btn-push-all").addEventListener("click", async () => {
+  const url = getScriptUrl();
+  if (!url) {
+    showToast("Bitte zuerst die Apps-Script-URL speichern");
+    return;
+  }
+  if (!confirm(`Die komplette lokale Stickerliste (${stickers.length} Sticker) ins Sheet hochladen? Das ersetzt den kompletten Sheet-Inhalt.`)) return;
+  const ok = await pushAllStickersToSheet();
+  showToast(ok ? "Komplette Liste hochgeladen" : "Hochladen fehlgeschlagen");
 });
 
 // ---------- Settings: export / import / reset ----------

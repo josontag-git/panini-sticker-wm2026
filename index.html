@@ -92,7 +92,7 @@
   <section id="tab-einstellungen" class="tab-panel">
     <div class="list-card">
       <h2>Google Sheet</h2>
-      <p class="list-card-sub">Jede Statusaenderung wird automatisch in dein Google Sheet geschrieben (Zeile pro Sticker, anhand der ID aktualisiert). Beim Oeffnen der App wird zusaetzlich automatisch mit dem Sheet abgeglichen, damit Aenderungen von anderen Geraeten uebernommen werden.</p>
+      <p class="list-card-sub">Das Sheet fuehrt die komplette Stickerliste (nicht nur den Sammelstatus) - Hinzufuegen, Bearbeiten und Loeschen im Admin-Bereich wird automatisch hochgeladen. Beim Oeffnen der App wird zusaetzlich automatisch mit dem Sheet abgeglichen, damit der Stand von anderen Geraeten uebernommen wird.</p>
       <div class="settings-row">
         <input type="url" id="script-url" placeholder="Apps-Script-Web-App-URL (.../exec)" />
       </div>
@@ -100,6 +100,9 @@
         <button class="btn" id="btn-save-script-url">URL speichern</button>
         <button class="btn" id="btn-sync-now">Jetzt synchronisieren</button>
         <button class="btn" id="btn-pull-sheet">Vom Sheet laden</button>
+      </div>
+      <div class="settings-row">
+        <button class="btn" id="btn-push-all">Komplette Liste ins Sheet hochladen</button>
       </div>
       <p class="list-card-sub" id="sync-status">Nicht verbunden.</p>
     </div>

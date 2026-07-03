@@ -2,14 +2,15 @@
 // Danach als Web App (neu) deployen (siehe README.md im Projekt-Root).
 
 const SHEET_STICKER = "Sticker";
-const HEADERS = [
-  "ID", "Nummer", "Titel", "Bereich", "Typ", "Kapitel", "Status", "Geloescht", "Zuletzt aktualisiert",
-];
+const HEADERS = ["ID", "Nummer", "Titel", "Bereich", "Typ", "Kapitel", "Status", "Zuletzt aktualisiert"];
 
 function doPost(e) {
   const data = JSON.parse(e.postData.contents);
+
   if (data.action === "delete") {
-    markDeleted(data.id);
+    deleteStickerRow(data.id);
+  } else if (data.action === "bulkUpsert" && Array.isArray(data.stickers)) {
+    bulkReplaceStickers(data.stickers);
   } else {
     upsertSticker(data);
   }
@@ -19,9 +20,10 @@ function doPost(e) {
   ).setMimeType(ContentService.MimeType.JSON);
 }
 
-// Liefert Definition + Status + Loesch-Markierung aller Sticker zurueck, damit ein
-// Geraet den Stand anderer Geraete abgleichen kann (Sammelstatus UND Admin-Aenderungen
-// wie Hinzufuegen/Bearbeiten/Loeschen von Stickern, z.B. Desktop <-> Handy).
+// Liefert die komplette aktuelle Stickerliste (Definition + Status) zurueck.
+// Das Sheet ist die vollstaendige Quelle: jedes Geraet gleicht sich beim
+// Start (und per "Vom Sheet laden") auf genau diesen Stand ab - Sticker,
+// die hier fehlen, gelten als geloescht.
 function doGet(e) {
   const sheet = getOrCreateSheet(SHEET_STICKER, HEADERS);
   const lastRow = sheet.getLastRow();
@@ -38,7 +40,6 @@ function doGet(e) {
         type: row[4] || "-",
         section: row[5] || row[3] || "",
         status: row[6] || "missing",
-        deleted: row[7] === "1" || row[7] === true,
       });
     }
   }
@@ -57,29 +58,47 @@ function upsertSticker(data) {
     data.type || "",
     data.section || "",
     data.status || "",
-    "",
     new Date(),
   ]);
 }
 
-// Markiert einen Sticker als geloescht, statt die Zeile zu entfernen (Tombstone) -
-// so erfahren andere Geraete beim naechsten Abgleich zuverlaessig von der Loeschung,
-// auch wenn sie den Sticker vorher nie gesehen haben.
-function markDeleted(id) {
+function deleteStickerRow(id) {
   const sheet = getOrCreateSheet(SHEET_STICKER, HEADERS);
   const lastRow = sheet.getLastRow();
   if (lastRow > 1) {
     const ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
     for (let i = 0; i < ids.length; i++) {
       if (ids[i][0] === id) {
-        sheet.getRange(i + 2, 8, 1, 1).setValue("1");
-        sheet.getRange(i + 2, 9, 1, 1).setValue(new Date());
+        sheet.deleteRow(i + 2);
         return;
       }
     }
   }
-  // Sticker war noch nie im Sheet - trotzdem als Tombstone anlegen.
-  sheet.appendRow([id, "", "", "", "", "", "", "1", new Date()]);
+}
+
+// Ersetzt den kompletten Sticker-Bestand im Sheet in einem Rutsch (ein
+// einziger setValues-Aufruf statt hunderter einzelner Requests). Dient zum
+// initialen Befuellen des Sheets mit der vollstaendigen Stickerliste sowie
+// zum vollstaendigen Neuabgleich vom Admin-Bereich aus.
+function bulkReplaceStickers(stickers) {
+  const sheet = getOrCreateSheet(SHEET_STICKER, HEADERS);
+  const lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    sheet.getRange(2, 1, lastRow - 1, HEADERS.length).clearContent();
+  }
+  if (!stickers.length) return;
+  const now = new Date();
+  const rows = stickers.map((s) => [
+    s.id,
+    s.number || s.id,
+    s.title || "",
+    s.area || "",
+    s.type || "-",
+    s.section || s.area || "",
+    s.status || "missing",
+    now,
+  ]);
+  sheet.getRange(2, 1, rows.length, HEADERS.length).setValues(rows);
 }
 
 function upsertRow(sheet, id, row) {
