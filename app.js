@@ -81,11 +81,10 @@ async function syncSticker(id) {
       body: JSON.stringify({
         id: sticker.id,
         number: sticker.number,
-        teamCode: sticker.teamCode,
-        teamName: sticker.teamName,
+        title: sticker.title,
+        area: sticker.area,
         type: sticker.type,
-        label: sticker.label,
-        position: sticker.position || "",
+        section: sticker.section,
         status: statusOf(id),
       }),
     });
@@ -111,47 +110,57 @@ function updateSyncStatus() {
 
 // ---------- Album rendering ----------
 
+const INSERT_PREFIXES = ["Coca Cola", "McDonald's", "Extra", "Update"];
+function isInsertType(type) {
+  return INSERT_PREFIXES.some((p) => type.startsWith(p));
+}
+
 function buildAlbum() {
   const container = document.getElementById("groups");
   container.innerHTML = "";
 
-  for (const team of TEAMS) {
-    const teamStickers = STICKERS.filter((s) => s.teamCode === team.code);
-    const teamBlock = document.createElement("div");
-    teamBlock.className = "team-block";
-    teamBlock.dataset.teamCode = team.code;
+  for (const section of SECTIONS) {
+    const sectionStickers = STICKERS.filter((s) => s.section === section.name);
+    const sectionBlock = document.createElement("div");
+    sectionBlock.className = "section-block";
+    sectionBlock.dataset.section = section.name;
 
-    const teamHead = document.createElement("div");
-    teamHead.className = "team-head";
-    teamHead.innerHTML = `
-      <span class="team-badge" style="background:${teamColor(team.code)}">${team.code}</span>
-      <span class="team-name">${team.name}</span>
-      <span class="team-fraction" data-role="team-fraction"></span>
+    const sectionHead = document.createElement("div");
+    sectionHead.className = "section-head";
+    sectionHead.innerHTML = `
+      <span class="section-badge" style="background:${teamColor(section.name)}">${section.badge}</span>
+      <span class="section-name">${section.name}</span>
+      <span class="section-fraction" data-role="section-fraction"></span>
     `;
 
     const grid = document.createElement("div");
     grid.className = "sticker-grid";
-    for (const sticker of teamStickers) {
+    for (const sticker of sectionStickers) {
       grid.appendChild(buildStickerEl(sticker));
     }
 
-    teamBlock.appendChild(teamHead);
-    teamBlock.appendChild(grid);
-    container.appendChild(teamBlock);
+    sectionBlock.appendChild(sectionHead);
+    sectionBlock.appendChild(grid);
+    container.appendChild(sectionBlock);
   }
 }
 
 function buildStickerEl(sticker) {
+  const special = isInsertType(sticker.type);
+  const typeClass = sticker.type === "foil" ? "foil" : sticker.type === "silver" ? "silver" : "";
+  const tag = special ? sticker.area : sticker.type !== "-" ? sticker.type : "";
+
   const el = document.createElement("div");
-  el.className = `sticker ${sticker.type} ${statusOf(sticker.id)}`;
+  el.className = `sticker ${typeClass} ${statusOf(sticker.id)}`.trim();
   el.dataset.id = sticker.id;
-  el.dataset.team = sticker.teamName.toLowerCase();
-  el.dataset.number = sticker.number;
-  el.title = `${sticker.number} ${sticker.teamName} - ${sticker.label}`;
+  el.dataset.area = sticker.area.toLowerCase();
+  el.dataset.title = sticker.title.toLowerCase();
+  el.dataset.number = sticker.number.toLowerCase();
+  el.title = `${sticker.id} ${sticker.area} - ${sticker.title}`;
   el.innerHTML = `
-    ${sticker.position ? `<span class="pos">${sticker.position}</span>` : ""}
+    ${tag ? `<span class="pos">${tag}</span>` : ""}
     <span class="num">${sticker.number}</span>
-    <span class="label">${sticker.label}</span>
+    <span class="label">${sticker.title}</span>
   `;
   return el;
 }
@@ -182,11 +191,11 @@ function applyFilters() {
   const term = searchTerm.trim().toLowerCase();
   let anyVisible = false;
 
-  document.querySelectorAll(".team-block").forEach((teamEl) => {
-    let teamHasVisible = false;
+  document.querySelectorAll(".section-block").forEach((sectionEl) => {
+    let sectionHasVisible = false;
     const owned = [];
     const total = [];
-    teamEl.querySelectorAll(".sticker").forEach((s) => {
+    sectionEl.querySelectorAll(".sticker").forEach((s) => {
       const status = statusOf(s.dataset.id);
       total.push(s);
       if (status !== "missing") owned.push(s);
@@ -195,14 +204,18 @@ function applyFilters() {
         activeFilter === "all" ||
         status === activeFilter ||
         (activeFilter === "owned" && status === "duplicate");
-      const matchesSearch = !term || s.dataset.number.includes(term) || s.dataset.team.includes(term);
+      const matchesSearch =
+        !term ||
+        s.dataset.number.includes(term) ||
+        s.dataset.area.includes(term) ||
+        s.dataset.title.includes(term);
       const visible = matchesFilter && matchesSearch;
       s.hidden = !visible;
-      if (visible) teamHasVisible = true;
+      if (visible) sectionHasVisible = true;
     });
-    teamEl.hidden = !teamHasVisible;
-    if (teamHasVisible) anyVisible = true;
-    const fractionEl = teamEl.querySelector('[data-role="team-fraction"]');
+    sectionEl.hidden = !sectionHasVisible;
+    if (sectionHasVisible) anyVisible = true;
+    const fractionEl = sectionEl.querySelector('[data-role="section-fraction"]');
     if (fractionEl) fractionEl.textContent = `${owned.length}/${total.length}`;
   });
 
@@ -261,7 +274,7 @@ function renderLists() {
     for (const s of missing) {
       const tag = document.createElement("span");
       tag.className = "tag";
-      tag.textContent = `${s.teamCode} ${s.number}`;
+      tag.textContent = s.id;
       missingEl.appendChild(tag);
     }
   }
@@ -272,7 +285,7 @@ function renderLists() {
     for (const s of duplicate) {
       const tag = document.createElement("span");
       tag.className = "tag";
-      tag.textContent = `${s.teamCode} ${s.number}`;
+      tag.textContent = s.id;
       duplicateEl.appendChild(tag);
     }
   }
@@ -282,7 +295,7 @@ document.querySelectorAll(".copy-btn").forEach((btn) => {
   btn.addEventListener("click", async () => {
     const kind = btn.dataset.copy;
     const list = STICKERS.filter((s) => statusOf(s.id) === kind);
-    const text = list.map((s) => `${s.number} ${s.teamName} - ${s.label}`).join("\n");
+    const text = list.map((s) => `${s.id} - ${s.area}: ${s.title}`).join("\n");
     try {
       await navigator.clipboard.writeText(text || "Leer");
       showToast("In Zwischenablage kopiert");

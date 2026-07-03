@@ -132,22 +132,23 @@ body {
 
 .hint { font-size: 0.72rem; color: var(--text-muted); margin: 10px 2px 14px; }
 
-.team-block { margin-bottom: 18px; }
-.team-head {
+.section-block { margin-bottom: 18px; }
+.section-head {
   display: flex;
   align-items: center;
   gap: 8px;
   margin: 0 2px 8px;
 }
-.team-badge {
-  width: 26px; height: 26px;
+.section-badge {
+  min-width: 26px; height: 26px;
+  padding: 0 4px;
   border-radius: 6px;
   display: flex; align-items: center; justify-content: center;
-  color: #fff; font-size: 0.6rem; font-weight: 700;
+  color: #fff; font-size: 0.55rem; font-weight: 700;
   flex: none;
 }
-.team-name { font-size: 0.85rem; font-weight: 600; }
-.team-fraction { margin-left: auto; font-size: 0.75rem; color: var(--text-muted); }
+.section-name { font-size: 0.85rem; font-weight: 600; }
+.section-fraction { margin-left: auto; font-size: 0.75rem; color: var(--text-muted); }
 
 .sticker-grid {
   display: grid;
@@ -196,6 +197,10 @@ body {
   opacity: 0.7;
 }
 
+.sticker.foil, .sticker.silver {
+  background: linear-gradient(135deg, var(--card-bg), var(--missing-bg));
+}
+
 .sticker.owned {
   opacity: 1;
   border-color: var(--owned);
@@ -226,10 +231,6 @@ body {
   color: #8a6d00;
   font-size: 0.6rem;
   font-weight: 900;
-}
-
-.sticker.badge, .sticker.team {
-  background: linear-gradient(135deg, var(--card-bg), var(--missing-bg));
 }
 
 .empty-state { text-align: center; color: var(--text-muted); margin-top: 40px; font-size: 0.85rem; }

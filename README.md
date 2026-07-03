@@ -2,7 +2,7 @@
 
 Progressive Web App zur schnellen Uebersicht ueber die Panini-WM-2026-Sticker-Sammlung: welche Sticker man hat, welche doppelt sind (zum Tauschen) und welche noch fehlen.
 
-Die Team-Liste (48 Teams, je 20 Sticker) orientiert sich am WM-2026-Teilnehmerfeld. Die Aufteilung der 20 Sticker pro Team (Logo, Mannschaftsfoto, Spielerpositionen) ist eine generische Platzhalter-Struktur, keine offizielle Panini-Checkliste.
+Die Stickerliste basiert auf einer vom Nutzer bereitgestellten Checkliste: 48 Team-Kapitel (Emblem, Spieler, Mannschaftsfoto, teils Silber-Parallelen) plus Sonderkapitel wie FIFA-Historie, Coca-Cola-Inserts, McDonald's-Exklusiv, Extra-Tiers und Update-Karten (insgesamt 1219 Sticker in 62 Kapiteln).
 
 ## Nutzung auf dem Handy
 

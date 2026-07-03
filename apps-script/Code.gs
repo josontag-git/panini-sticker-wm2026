@@ -14,16 +14,15 @@ function doPost(e) {
 
 function upsertSticker(data) {
   const sheet = getOrCreateSheet(SHEET_STICKER, [
-    "ID", "Nummer", "Team-Code", "Team", "Typ", "Bezeichnung", "Position", "Status", "Zuletzt aktualisiert",
+    "ID", "Nummer", "Titel", "Bereich", "Typ", "Kapitel", "Status", "Zuletzt aktualisiert",
   ]);
   upsertRow(sheet, data.id, [
     data.id,
     data.number || "",
-    data.teamCode || "",
-    data.teamName || "",
+    data.title || "",
+    data.area || "",
     data.type || "",
-    data.label || "",
-    data.position || "",
+    data.section || "",
     data.status || "",
     new Date(),
   ]);
