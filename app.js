@@ -1,13 +1,18 @@
 const STORAGE_KEY = "panini-wm26-state-v1";
 const STORAGE_SCRIPT_URL = "panini-wm26-script-url";
 const STORAGE_DIRTY = "panini-wm26-dirty-v1";
+const STORAGE_STICKERS = "panini-wm26-stickers-v1";
 const STATUS_CYCLE = { missing: "owned", owned: "duplicate", duplicate: "missing" };
 const STATUS_LABEL = { missing: "Fehlt", owned: "Habe", duplicate: "Doppelt" };
 const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby0hA1vkJIGtZdNwk7jdTrBHgLL5_sO2DXAnxh5NKOnC8gFJz8_KyTDSh_wGkC7ODM8/exec";
 
 let state = loadState();
+let stickers = loadStickers();
 let activeFilter = "all";
 let searchTerm = "";
+let adminSearchTerm = "";
+let editingStickerId = null;
+let addingSticker = false;
 
 function loadState() {
   try {
@@ -29,6 +34,58 @@ function setStatus(id, status) {
   if (status === "missing") delete state[id];
   else state[id] = status;
   saveState();
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
+
+// ---------- Sticker-Datenbank (editierbar im Admin-Bereich) ----------
+
+function loadStickers() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_STICKERS));
+    if (Array.isArray(stored) && stored.length) return stored;
+  } catch {
+    // fall through to defaults
+  }
+  return structuredClone(DEFAULT_STICKERS);
+}
+
+function saveStickers() {
+  localStorage.setItem(STORAGE_STICKERS, JSON.stringify(stickers));
+}
+
+function renameStatusKey(oldId, newId) {
+  if (oldId === newId) return;
+  if (Object.prototype.hasOwnProperty.call(state, oldId)) {
+    state[newId] = state[oldId];
+    delete state[oldId];
+    saveState();
+  }
+  const dirty = loadDirty();
+  const idx = dirty.indexOf(oldId);
+  if (idx !== -1) {
+    dirty[idx] = newId;
+    saveDirty(dirty);
+  }
+}
+
+function deleteStatusKey(id) {
+  if (Object.prototype.hasOwnProperty.call(state, id)) {
+    delete state[id];
+    saveState();
+  }
+  saveDirty(loadDirty().filter((d) => d !== id));
+}
+
+function rerenderAll() {
+  buildAlbum();
+  updateStats();
+  applyFilters();
+  renderAdmin();
 }
 
 // ---------- Google Sheet Sync ----------
@@ -71,7 +128,7 @@ function clearDirty(id) {
 async function syncSticker(id) {
   const url = getScriptUrl();
   if (!url) return;
-  const sticker = STICKERS.find((s) => s.id === id);
+  const sticker = stickers.find((s) => s.id === id);
   if (!sticker) return;
   try {
     await fetch(url, {
@@ -119,8 +176,8 @@ function buildAlbum() {
   const container = document.getElementById("groups");
   container.innerHTML = "";
 
-  for (const section of SECTIONS) {
-    const sectionStickers = STICKERS.filter((s) => s.section === section.name);
+  for (const section of deriveSections(stickers)) {
+    const sectionStickers = stickers.filter((s) => s.section === section.name);
     const sectionBlock = document.createElement("div");
     sectionBlock.className = "section-block";
     sectionBlock.dataset.section = section.name;
@@ -128,8 +185,8 @@ function buildAlbum() {
     const sectionHead = document.createElement("div");
     sectionHead.className = "section-head";
     sectionHead.innerHTML = `
-      <span class="section-badge" style="background:${teamColor(section.name)}">${section.badge}</span>
-      <span class="section-name">${section.name}</span>
+      <span class="section-badge" style="background:${teamColor(section.name)}">${escapeHtml(section.badge)}</span>
+      <span class="section-name">${escapeHtml(section.name)}</span>
       <span class="section-fraction" data-role="section-fraction"></span>
     `;
 
@@ -158,9 +215,9 @@ function buildStickerEl(sticker) {
   el.dataset.number = sticker.number.toLowerCase();
   el.title = `${sticker.id} ${sticker.area} - ${sticker.title}`;
   el.innerHTML = `
-    ${tag ? `<span class="pos">${tag}</span>` : ""}
-    <span class="num">${sticker.number}</span>
-    <span class="label">${sticker.title}</span>
+    ${tag ? `<span class="pos">${escapeHtml(tag)}</span>` : ""}
+    <span class="num">${escapeHtml(sticker.number)}</span>
+    <span class="label">${escapeHtml(sticker.title)}</span>
   `;
   return el;
 }
@@ -168,7 +225,7 @@ function buildStickerEl(sticker) {
 function cycleSticker(id) {
   const next = STATUS_CYCLE[statusOf(id)];
   setStatus(id, next);
-  const el = document.querySelector(`.sticker[data-id="${id}"]`);
+  const el = document.querySelector(`.sticker[data-id="${CSS.escape(id)}"]`);
   if (el) {
     el.classList.remove("missing", "owned", "duplicate");
     el.classList.add(next);
@@ -240,12 +297,12 @@ document.getElementById("filter-chips").addEventListener("click", (e) => {
 
 function updateStats() {
   let owned = 0, duplicate = 0;
-  for (const sticker of STICKERS) {
+  for (const sticker of stickers) {
     const s = statusOf(sticker.id);
     if (s === "owned") owned++;
     else if (s === "duplicate") duplicate++;
   }
-  const total = STICKERS.length;
+  const total = stickers.length;
   const collected = owned + duplicate;
   const missing = total - collected;
 
@@ -265,8 +322,8 @@ function renderLists() {
   missingEl.innerHTML = "";
   duplicateEl.innerHTML = "";
 
-  const missing = STICKERS.filter((s) => statusOf(s.id) === "missing");
-  const duplicate = STICKERS.filter((s) => statusOf(s.id) === "duplicate");
+  const missing = stickers.filter((s) => statusOf(s.id) === "missing");
+  const duplicate = stickers.filter((s) => statusOf(s.id) === "duplicate");
 
   if (!missing.length) {
     missingEl.innerHTML = '<span class="empty">Alles vollstaendig!</span>';
@@ -294,7 +351,7 @@ function renderLists() {
 document.querySelectorAll(".copy-btn").forEach((btn) => {
   btn.addEventListener("click", async () => {
     const kind = btn.dataset.copy;
-    const list = STICKERS.filter((s) => statusOf(s.id) === kind);
+    const list = stickers.filter((s) => statusOf(s.id) === kind);
     const text = list.map((s) => `${s.id} - ${s.area}: ${s.title}`).join("\n");
     try {
       await navigator.clipboard.writeText(text || "Leer");
@@ -314,6 +371,174 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
     btn.classList.add("active");
     document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
   });
+});
+
+// ---------- Admin: Sticker verwalten ----------
+
+const ADMIN_FIELDS = ["id", "number", "title", "area", "type", "section"];
+const ADMIN_LABELS = { id: "ID", number: "Nummer", title: "Titel", area: "Bereich", type: "Typ", section: "Kapitel" };
+
+function renderAdmin() {
+  const countEl = document.getElementById("admin-count");
+  const listEl = document.getElementById("admin-list");
+  const addSlot = document.getElementById("admin-add-slot");
+  if (!listEl) return;
+
+  const term = adminSearchTerm.trim().toLowerCase();
+  const filtered = term
+    ? stickers.filter(
+        (s) =>
+          s.id.toLowerCase().includes(term) ||
+          s.title.toLowerCase().includes(term) ||
+          s.area.toLowerCase().includes(term) ||
+          s.section.toLowerCase().includes(term)
+      )
+    : stickers;
+
+  countEl.textContent = `${filtered.length} / ${stickers.length} Sticker`;
+
+  addSlot.innerHTML = "";
+  if (addingSticker) {
+    addSlot.appendChild(buildAdminForm(null));
+  }
+
+  listEl.innerHTML = "";
+  if (!filtered.length) {
+    listEl.innerHTML = '<p class="empty-state">Keine Sticker gefunden.</p>';
+    return;
+  }
+  const frag = document.createDocumentFragment();
+  for (const sticker of filtered) {
+    frag.appendChild(editingStickerId === sticker.id ? buildAdminForm(sticker) : buildAdminRow(sticker));
+  }
+  listEl.appendChild(frag);
+}
+
+function buildAdminRow(sticker) {
+  const row = document.createElement("div");
+  row.className = "admin-row";
+  row.innerHTML = `
+    <div class="admin-row-main">
+      <strong>${escapeHtml(sticker.id)}</strong>
+      <span>${escapeHtml(sticker.title)}</span>
+      <span class="admin-row-meta">${escapeHtml(sticker.area)} &middot; ${escapeHtml(sticker.section)}</span>
+    </div>
+    <div class="admin-row-actions">
+      <button class="btn admin-edit-btn" type="button">Bearbeiten</button>
+      <button class="btn btn-danger admin-delete-btn" type="button">Loeschen</button>
+    </div>
+  `;
+  row.querySelector(".admin-edit-btn").addEventListener("click", () => {
+    editingStickerId = sticker.id;
+    addingSticker = false;
+    renderAdmin();
+  });
+  row.querySelector(".admin-delete-btn").addEventListener("click", () => {
+    if (!confirm(`"${sticker.id} - ${sticker.title}" wirklich loeschen?`)) return;
+    stickers = stickers.filter((s) => s.id !== sticker.id);
+    saveStickers();
+    deleteStatusKey(sticker.id);
+    rerenderAll();
+    showToast("Sticker geloescht");
+  });
+  return row;
+}
+
+function buildAdminForm(sticker) {
+  const isNew = !sticker;
+  const values = sticker || { id: "", number: "", title: "", area: "", type: "-", section: "" };
+
+  const wrap = document.createElement("div");
+  wrap.className = "admin-row admin-row-edit";
+
+  const form = document.createElement("div");
+  form.className = "admin-form";
+  for (const field of ADMIN_FIELDS) {
+    const label = document.createElement("label");
+    label.textContent = ADMIN_LABELS[field];
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = `af-${field}`;
+    input.value = values[field];
+    label.appendChild(input);
+    form.appendChild(label);
+  }
+  wrap.appendChild(form);
+
+  const actions = document.createElement("div");
+  actions.className = "admin-row-actions";
+  const saveBtn = document.createElement("button");
+  saveBtn.className = "btn";
+  saveBtn.type = "button";
+  saveBtn.textContent = isNew ? "Hinzufuegen" : "Speichern";
+  const cancelBtn = document.createElement("button");
+  cancelBtn.className = "btn";
+  cancelBtn.type = "button";
+  cancelBtn.textContent = "Abbrechen";
+  actions.appendChild(saveBtn);
+  actions.appendChild(cancelBtn);
+  wrap.appendChild(actions);
+
+  cancelBtn.addEventListener("click", () => {
+    editingStickerId = null;
+    addingSticker = false;
+    renderAdmin();
+  });
+
+  saveBtn.addEventListener("click", () => {
+    const next = {};
+    for (const field of ADMIN_FIELDS) {
+      next[field] = form.querySelector(`.af-${field}`).value.trim();
+    }
+    if (!next.id || !next.title || !next.area || !next.section) {
+      showToast("ID, Titel, Bereich und Kapitel sind Pflichtfelder");
+      return;
+    }
+    if (!next.number) next.number = next.id;
+    if (!next.type) next.type = "-";
+
+    const idCollision = stickers.some((s) => s.id === next.id && (isNew || s.id !== values.id));
+    if (idCollision) {
+      showToast(`ID "${next.id}" ist bereits vergeben`);
+      return;
+    }
+
+    if (isNew) {
+      stickers.push(next);
+    } else {
+      const idx = stickers.findIndex((s) => s.id === values.id);
+      if (idx !== -1) stickers[idx] = next;
+      renameStatusKey(values.id, next.id);
+    }
+    saveStickers();
+    editingStickerId = null;
+    addingSticker = false;
+    rerenderAll();
+    showToast(isNew ? "Sticker hinzugefuegt" : "Sticker gespeichert");
+  });
+
+  return wrap;
+}
+
+document.getElementById("admin-search").addEventListener("input", (e) => {
+  adminSearchTerm = e.target.value;
+  renderAdmin();
+});
+
+document.getElementById("btn-admin-add").addEventListener("click", () => {
+  addingSticker = !addingSticker;
+  editingStickerId = null;
+  renderAdmin();
+});
+
+document.getElementById("btn-admin-reset").addEventListener("click", () => {
+  if (!confirm("Wirklich alle Aenderungen an der Stickerliste verwerfen und die Standardliste wiederherstellen?")) return;
+  stickers = structuredClone(DEFAULT_STICKERS);
+  saveStickers();
+  editingStickerId = null;
+  addingSticker = false;
+  rerenderAll();
+  showToast("Stickerliste zurueckgesetzt");
 });
 
 // ---------- Settings: Google Sheet sync ----------
@@ -369,13 +594,7 @@ document.getElementById("file-import").addEventListener("change", async (e) => {
     if (!data || typeof data.state !== "object") throw new Error("invalid");
     state = data.state;
     saveState();
-    document.querySelectorAll(".sticker").forEach((el) => {
-      const status = statusOf(el.dataset.id);
-      el.classList.remove("missing", "owned", "duplicate");
-      el.classList.add(status);
-    });
-    updateStats();
-    applyFilters();
+    rerenderAll();
     showToast("Sicherung importiert");
   } catch {
     showToast("Datei ungueltig");
@@ -387,12 +606,7 @@ document.getElementById("btn-reset").addEventListener("click", () => {
   if (!confirm("Wirklich den gesamten Fortschritt loeschen?")) return;
   state = {};
   saveState();
-  document.querySelectorAll(".sticker").forEach((el) => {
-    el.classList.remove("missing", "owned", "duplicate");
-    el.classList.add("missing");
-  });
-  updateStats();
-  applyFilters();
+  rerenderAll();
   showToast("Fortschritt zurueckgesetzt");
 });
 
@@ -412,6 +626,7 @@ function showToast(msg) {
 buildAlbum();
 updateStats();
 applyFilters();
+renderAdmin();
 document.getElementById("script-url").value = getScriptUrl();
 updateSyncStatus();
 

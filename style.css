@@ -269,6 +269,48 @@ body {
 .settings-row { margin-bottom: 10px; display: flex; gap: 10px; flex-wrap: wrap; }
 .btn-danger { color: #c62828; border-color: #e0b4b0; }
 
+.admin-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.admin-row-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.admin-row-main strong { font-size: 0.82rem; }
+.admin-row-main span { font-size: 0.78rem; }
+.admin-row-meta { color: var(--text-muted); font-size: 0.7rem !important; }
+.admin-row-actions { display: flex; gap: 8px; flex: none; }
+.admin-row-actions .btn { padding: 6px 10px; font-size: 0.72rem; }
+
+.admin-row-edit { flex-direction: column; align-items: stretch; }
+.admin-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.admin-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+.admin-form input {
+  padding: 7px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.8rem;
+}
+
 .toast {
   position: fixed;
   bottom: calc(70px + var(--safe-bottom));

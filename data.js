@@ -1,71 +1,8 @@
 // WM-2026-Stickerliste, uebernommen aus der vom Nutzer bereitgestellten Checkliste.
-// 62 Abschnitte: 48 Laender-Seiten (Basis + z.T. Silber-Parallelen) plus Sonderkapitel
-// (Intro/Historie, Coca-Cola-Inserts, McDonald's-Exklusiv, Extra-Tiers, Update).
-
-const SECTIONS = [
-  { name: "We Are Panini", badge: "WAP" },
-  { name: "FIFA World Cup 2026", badge: "FWC" },
-  { name: "Host Countries and Cities", badge: "FWC" },
-  { name: "Mexico", badge: "MEX" },
-  { name: "South Africa", badge: "RSA" },
-  { name: "South Korea", badge: "KOR" },
-  { name: "Czechia", badge: "CZE" },
-  { name: "Canada", badge: "CAN" },
-  { name: "Bosnia and Herzegovina", badge: "BIH" },
-  { name: "Qatar", badge: "QAT" },
-  { name: "Switzerland", badge: "SUI" },
-  { name: "Brazil", badge: "BRA" },
-  { name: "Morocco", badge: "MAR" },
-  { name: "Haiti", badge: "HAI" },
-  { name: "Scotland", badge: "SCO" },
-  { name: "USA", badge: "USA" },
-  { name: "Paraguay", badge: "PAR" },
-  { name: "Australia", badge: "AUS" },
-  { name: "Türkiye", badge: "TUR" },
-  { name: "Germany", badge: "GER" },
-  { name: "Curaçao", badge: "CUW" },
-  { name: "Ivory Coast", badge: "CIV" },
-  { name: "Ecuador", badge: "ECU" },
-  { name: "Netherlands", badge: "NED" },
-  { name: "Japan", badge: "JPN" },
-  { name: "Sweden", badge: "SWE" },
-  { name: "Tunisia", badge: "TUN" },
-  { name: "Belgium", badge: "BEL" },
-  { name: "Egypt", badge: "EGY" },
-  { name: "Iran", badge: "IRN" },
-  { name: "New Zealand", badge: "NZL" },
-  { name: "Spain", badge: "ESP" },
-  { name: "Cape Verde", badge: "CPV" },
-  { name: "Saudi Arabia", badge: "KSA" },
-  { name: "Uruguay", badge: "URU" },
-  { name: "France", badge: "FRA" },
-  { name: "Senegal", badge: "SEN" },
-  { name: "Iraq", badge: "IRQ" },
-  { name: "Norway", badge: "NOR" },
-  { name: "Argentina", badge: "ARG" },
-  { name: "Algeria", badge: "ALG" },
-  { name: "Austria", badge: "AUT" },
-  { name: "Jordan", badge: "JOR" },
-  { name: "Portugal", badge: "POR" },
-  { name: "Congo DR", badge: "COD" },
-  { name: "Uzbekistan", badge: "UZB" },
-  { name: "Colombia", badge: "COL" },
-  { name: "England", badge: "ENG" },
-  { name: "Croatia", badge: "CRO" },
-  { name: "Ghana", badge: "GHA" },
-  { name: "Panama", badge: "PAN" },
-  { name: "FIFA World Cup History", badge: "FWC" },
-  { name: "Coca Cola / USA Canada", badge: "CC-US" },
-  { name: "Coca Cola / Latin America", badge: "CC-LA" },
-  { name: "Coca Cola / Rest of the World", badge: "CC-RW" },
-  { name: "Coca Cola / Europe", badge: "CC-EU" },
-  { name: "McDonald's Exclusive", badge: "ARG" },
-  { name: "Extra / Base", badge: "LM" },
-  { name: "Extra / Bronze", badge: "LM-B" },
-  { name: "Extra / Silver", badge: "LM-S" },
-  { name: "Extra / Gold", badge: "LM-G" },
-  { name: "Update / Spain", badge: "ESP-J" },
-];
+// Dies ist die Standard-/Ausgangsliste (Seed-Daten). Zur Laufzeit haelt die App eine
+// editierbare Kopie im localStorage, die im Admin-Bereich veraendert werden kann
+// (siehe STORAGE_STICKERS in app.js). "Auf Standard zuruecksetzen" im Admin-Bereich
+// stellt exakt diese Liste wieder her.
 
 function teamColor(code) {
   let hash = 0;
@@ -74,7 +11,30 @@ function teamColor(code) {
   return `hsl(${hue}, 58%, 40%)`;
 }
 
-const STICKERS = [
+// Leitet eine kurze Badge-Kennung aus der Sticker-ID ab (z.B. "GER10s" -> "GER"),
+// mit Rueckfallebene auf die Initialen des Kapitelnamens.
+function deriveBadge(firstId, sectionName) {
+  const stripped = String(firstId).replace(/\d+[a-z]*$/i, "");
+  if (stripped) return stripped.slice(0, 5).toUpperCase();
+  const words = String(sectionName).match(/[A-Za-z]+/g) || [];
+  return words.slice(0, 3).map((w) => w[0]).join("").toUpperCase() || "?";
+}
+
+// Berechnet die geordnete Liste eindeutiger Kapitel (Sektionen) aus einer Sticker-Liste,
+// in Reihenfolge des ersten Auftretens - so bleibt die Album-Struktur konsistent,
+// auch wenn im Admin-Bereich Sticker mit neuen Kapitelnamen hinzugefuegt werden.
+function deriveSections(stickerList) {
+  const bySection = new Map();
+  for (const sticker of stickerList) {
+    if (!bySection.has(sticker.section)) bySection.set(sticker.section, sticker.id);
+  }
+  return [...bySection.entries()].map(([name, firstId]) => ({
+    name,
+    badge: deriveBadge(firstId, name),
+  }));
+}
+
+const DEFAULT_STICKERS = [
   { id: "0", number: "0", title: "Panini Logo", area: "We Are Panini", type: "foil", section: "We Are Panini" },
   { id: "FWC1", number: "FWC1", title: "Official Emblem 1", area: "FIFA World Cup 2026", type: "foil", section: "FIFA World Cup 2026" },
   { id: "FWC2", number: "FWC2", title: "Official Emblem 2", area: "FIFA World Cup 2026", type: "foil", section: "FIFA World Cup 2026" },

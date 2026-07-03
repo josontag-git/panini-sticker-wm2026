@@ -34,6 +34,7 @@
 <nav class="tabs" role="tablist">
   <button class="tab-btn active" data-tab="album">Album</button>
   <button class="tab-btn" data-tab="listen">Listen</button>
+  <button class="tab-btn" data-tab="admin">Admin</button>
   <button class="tab-btn" data-tab="einstellungen">Mehr</button>
 </nav>
 
@@ -70,6 +71,19 @@
       <p class="list-card-sub">Deine Doppelten &ndash; zum Tauschen mit Freunden.</p>
       <div class="chip-list" id="duplicate-list"></div>
     </div>
+  </section>
+
+  <section id="tab-admin" class="tab-panel">
+    <div class="toolbar">
+      <input type="search" id="admin-search" placeholder="Sticker suchen (ID, Titel, Bereich, Kapitel)..." autocomplete="off" />
+    </div>
+    <div class="settings-row">
+      <button class="btn" id="btn-admin-add">+ Neuer Sticker</button>
+      <button class="btn btn-danger" id="btn-admin-reset">Auf Standard zuruecksetzen</button>
+    </div>
+    <p class="list-card-sub" id="admin-count"></p>
+    <div id="admin-add-slot"></div>
+    <div id="admin-list"></div>
   </section>
 
   <section id="tab-einstellungen" class="tab-panel">
