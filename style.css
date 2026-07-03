@@ -171,6 +171,9 @@ body {
   gap: 8px;
   margin: 0 2px 8px;
 }
+.admin-section-head { margin: 18px 2px 8px; }
+.admin-section-head:first-child { margin-top: 0; }
+.admin-section-head .section-fraction { font-size: 0.75rem; color: var(--text-muted); }
 .section-badge {
   min-width: 26px; height: 26px;
   padding: 0 4px;

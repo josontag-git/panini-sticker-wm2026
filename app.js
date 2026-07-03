@@ -1,6 +1,7 @@
 const STORAGE_KEY = "panini-wm26-state-v1";
 const STORAGE_SCRIPT_URL = "panini-wm26-script-url";
 const STORAGE_DIRTY = "panini-wm26-dirty-v1";
+const STORAGE_PENDING_DELETES = "panini-wm26-pending-deletes-v1";
 const STORAGE_STICKERS = "panini-wm26-stickers-v1";
 const STATUS_CYCLE = { missing: "owned", owned: "duplicate", duplicate: "missing" };
 const STATUS_LABEL = { missing: "Fehlt", owned: "Habe", duplicate: "Doppelt" };
@@ -81,6 +82,32 @@ function deleteStatusKey(id) {
   saveDirty(loadDirty().filter((d) => d !== id));
 }
 
+function loadPendingDeletes() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_PENDING_DELETES)) || [];
+  } catch {
+    return [];
+  }
+}
+
+function savePendingDeletes(ids) {
+  localStorage.setItem(STORAGE_PENDING_DELETES, JSON.stringify(ids));
+}
+
+function markPendingDelete(id) {
+  const pending = loadPendingDeletes();
+  if (!pending.includes(id)) {
+    pending.push(id);
+    savePendingDeletes(pending);
+  }
+  updateSyncStatus();
+}
+
+function clearPendingDelete(id) {
+  savePendingDeletes(loadPendingDeletes().filter((d) => d !== id));
+  updateSyncStatus();
+}
+
 function rerenderAll() {
   buildAlbum();
   updateStats();
@@ -151,6 +178,37 @@ async function syncSticker(id) {
   }
 }
 
+// Loescht einen Sticker auf dem Sheet (Tombstone), damit andere Geraete die
+// Loeschung beim naechsten Abgleich uebernehmen. Wird ueber ein eigenes
+// pending-deletes-Set nachverfolgt, da der Sticker lokal bereits entfernt ist.
+async function syncStickerDelete(id) {
+  const url = getScriptUrl();
+  if (!url) return;
+  try {
+    await fetch(url, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ id, action: "delete" }),
+    });
+    clearPendingDelete(id);
+  } catch {
+    // bleibt als offen markiert, wird beim naechsten Sync erneut versucht
+  }
+}
+
+async function flushDirty() {
+  for (const id of loadDirty()) {
+    await syncSticker(id);
+  }
+}
+
+async function flushPendingDeletes() {
+  for (const id of loadPendingDeletes()) {
+    await syncStickerDelete(id);
+  }
+}
+
 async function pullFromSheet() {
   const url = getScriptUrl();
   if (!url) return false;
@@ -161,17 +219,55 @@ async function pullFromSheet() {
     if (!data || !Array.isArray(data.stickers)) throw new Error("invalid payload");
 
     const dirty = new Set(loadDirty());
+    const pendingDeletes = new Set(loadPendingDeletes());
     let changed = false;
+
     for (const row of data.stickers) {
-      // Noch nicht hochgeladene lokale Aenderungen haben Vorrang, damit
-      // ein Abgleich sie nicht ueberschreibt.
-      if (dirty.has(row.id)) continue;
+      // Noch nicht hochgeladene lokale Aenderungen (Status/Definition/Loeschung)
+      // haben Vorrang, damit ein Abgleich sie nicht ueberschreibt.
+      if (dirty.has(row.id) || pendingDeletes.has(row.id)) continue;
+
+      if (row.deleted) {
+        if (stickers.some((s) => s.id === row.id)) {
+          stickers = stickers.filter((s) => s.id !== row.id);
+          changed = true;
+        }
+        deleteStatusKey(row.id);
+        continue;
+      }
+
+      const remoteDef = {
+        id: row.id,
+        number: row.number || row.id,
+        title: row.title || "",
+        area: row.area || "",
+        type: row.type || "-",
+        section: row.section || row.area || "",
+      };
+      const idx = stickers.findIndex((s) => s.id === row.id);
+      if (idx === -1) {
+        // Auf einem anderen Geraet neu angelegter Sticker.
+        stickers.push(remoteDef);
+        changed = true;
+      } else {
+        const local = stickers[idx];
+        const defChanged = ADMIN_FIELDS.some((field) => local[field] !== remoteDef[field]);
+        if (defChanged) {
+          stickers[idx] = remoteDef;
+          changed = true;
+        }
+      }
+
       if (statusOf(row.id) !== row.status) {
         setStatus(row.id, row.status);
         changed = true;
       }
     }
-    if (changed) rerenderAll();
+
+    if (changed) {
+      saveStickers();
+      rerenderAll();
+    }
     return true;
   } catch {
     return false;
@@ -182,7 +278,7 @@ function updateSyncStatus() {
   const el = document.getElementById("sync-status");
   if (!el) return;
   const url = getScriptUrl();
-  const pending = loadDirty().length;
+  const pending = loadDirty().length + loadPendingDeletes().length;
   if (!url) {
     el.textContent = "Nicht verbunden.";
   } else if (pending > 0) {
@@ -412,15 +508,13 @@ function renderAdmin() {
   if (!listEl) return;
 
   const term = adminSearchTerm.trim().toLowerCase();
-  const filtered = term
-    ? stickers.filter(
-        (s) =>
-          s.id.toLowerCase().includes(term) ||
-          s.title.toLowerCase().includes(term) ||
-          s.area.toLowerCase().includes(term) ||
-          s.section.toLowerCase().includes(term)
-      )
-    : stickers;
+  const matches = (s) =>
+    !term ||
+    s.id.toLowerCase().includes(term) ||
+    s.title.toLowerCase().includes(term) ||
+    s.area.toLowerCase().includes(term) ||
+    s.section.toLowerCase().includes(term);
+  const filtered = stickers.filter(matches);
 
   countEl.textContent = `${filtered.length} / ${stickers.length} Sticker`;
 
@@ -434,9 +528,24 @@ function renderAdmin() {
     listEl.innerHTML = '<p class="empty-state">Keine Sticker gefunden.</p>';
     return;
   }
+
   const frag = document.createDocumentFragment();
-  for (const sticker of filtered) {
-    frag.appendChild(editingStickerId === sticker.id ? buildAdminForm(sticker) : buildAdminRow(sticker));
+  for (const section of deriveSections(stickers)) {
+    const sectionStickers = filtered.filter((s) => s.section === section.name);
+    if (!sectionStickers.length) continue;
+
+    const head = document.createElement("div");
+    head.className = "section-head admin-section-head";
+    head.innerHTML = `
+      <span class="section-badge" style="background:${teamColor(section.name)}">${escapeHtml(section.badge)}</span>
+      <span class="section-name">${escapeHtml(section.name)}</span>
+      <span class="section-fraction">${sectionStickers.length}</span>
+    `;
+    frag.appendChild(head);
+
+    for (const sticker of sectionStickers) {
+      frag.appendChild(editingStickerId === sticker.id ? buildAdminForm(sticker) : buildAdminRow(sticker));
+    }
   }
   listEl.appendChild(frag);
 }
@@ -465,6 +574,8 @@ function buildAdminRow(sticker) {
     stickers = stickers.filter((s) => s.id !== sticker.id);
     saveStickers();
     deleteStatusKey(sticker.id);
+    markPendingDelete(sticker.id);
+    syncStickerDelete(sticker.id);
     rerenderAll();
     showToast("Sticker geloescht");
   });
@@ -530,6 +641,8 @@ function buildAdminForm(sticker) {
       return;
     }
 
+    const idRenamed = !isNew && values.id !== next.id;
+
     if (isNew) {
       stickers.push(next);
     } else {
@@ -538,6 +651,15 @@ function buildAdminForm(sticker) {
       renameStatusKey(values.id, next.id);
     }
     saveStickers();
+
+    if (idRenamed) {
+      // Alte ID auf dem Sheet als geloescht markieren, neue ID als neuer Sticker pushen.
+      markPendingDelete(values.id);
+      syncStickerDelete(values.id);
+    }
+    markDirty(next.id);
+    syncSticker(next.id);
+
     editingStickerId = null;
     addingSticker = false;
     rerenderAll();
@@ -583,14 +705,12 @@ document.getElementById("btn-sync-now").addEventListener("click", async () => {
     showToast("Bitte zuerst die Apps-Script-URL speichern");
     return;
   }
-  const dirty = loadDirty();
-  if (!dirty.length) {
+  if (!loadDirty().length && !loadPendingDeletes().length) {
     showToast("Bereits alles synchronisiert");
     return;
   }
-  for (const id of dirty) {
-    await syncSticker(id);
-  }
+  await flushDirty();
+  await flushPendingDeletes();
   showToast("Synchronisierung abgeschlossen");
 });
 
@@ -747,9 +867,15 @@ renderAdmin();
 document.getElementById("script-url").value = getScriptUrl();
 updateSyncStatus();
 
-// Beim Start automatisch mit dem Sheet abgleichen, damit Aenderungen von
-// anderen Geraeten (z.B. Handy <-> Desktop) uebernommen werden.
-pullFromSheet();
+// Beim Start zuerst eigene ausstehende Aenderungen hochladen, dann mit dem
+// Sheet abgleichen, damit Aenderungen von anderen Geraeten (z.B. Handy <->
+// Desktop) uebernommen werden - inkl. im Admin-Bereich hinzugefuegter,
+// bearbeiteter oder geloeschter Sticker.
+(async () => {
+  await flushDirty();
+  await flushPendingDeletes();
+  await pullFromSheet();
+})();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
