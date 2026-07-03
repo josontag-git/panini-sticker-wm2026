@@ -1,4 +1,5 @@
 :root {
+  /* Hell (auch Standard/Basis fuer "System" bei hellem OS-Modus) */
   --green: #2e7d32;
   --green-light: #43a047;
   --blue: #1565c0;
@@ -19,8 +20,11 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* "System": folgt der OS-Einstellung - greift nur, wenn kein Theme explizit
+   gewaehlt wurde (data-theme fehlt bzw. steht auf "system"). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]),
+  html[data-theme="system"] {
     --bg: #10140f;
     --card-bg: #1b211a;
     --text: #eef2ec;
@@ -31,6 +35,101 @@
     --owned-bg: #1c3620;
     --duplicate-bg: #3a3115;
   }
+}
+
+/* Explizit gewaehlte Themes ueberschreiben Hell/System-Standard und die
+   automatische OS-Dunkel-Erkennung. */
+
+html[data-theme="dark"] {
+  --bg: #10140f;
+  --card-bg: #1b211a;
+  --text: #eef2ec;
+  --text-muted: #9aa69a;
+  --border: #2a322a;
+  --missing-bg: #232a22;
+  --missing-border: #333d33;
+  --owned-bg: #1c3620;
+  --duplicate-bg: #3a3115;
+}
+
+html[data-theme="light"] {
+  --green: #2e7d32;
+  --blue: #1565c0;
+  --blue-light: #1976d2;
+  --gold: #f2b705;
+  --bg: #f3f7f2;
+  --card-bg: #ffffff;
+  --text: #1b1e1c;
+  --text-muted: #5c655e;
+  --border: #dfe7de;
+  --missing-bg: #eceeec;
+  --missing-border: #c7cec6;
+  --owned-bg: #e6f4e6;
+  --duplicate-bg: #fdf3d9;
+}
+
+html[data-theme="neon"] {
+  --green: #00ff9c;
+  --blue: #00e5ff;
+  --blue-light: #7c4dff;
+  --gold: #ffea00;
+  --bg: #0a0014;
+  --card-bg: #17062b;
+  --text: #f2e9ff;
+  --text-muted: #b39ddb;
+  --border: #6a1b9a;
+  --missing-bg: #1a0a2e;
+  --missing-border: #4a2472;
+  --owned-bg: #00301f;
+  --duplicate-bg: #332b00;
+}
+
+html[data-theme="bunt"] {
+  --green: #06d6a0;
+  --blue: #ff006e;
+  --blue-light: #fb5607;
+  --gold: #ffbe0b;
+  --bg: #fff4e0;
+  --card-bg: #ffffff;
+  --text: #241a3a;
+  --text-muted: #7a5ca8;
+  --border: #ffb703;
+  --missing-bg: #fff0d6;
+  --missing-border: #ffd166;
+  --owned-bg: #cffbef;
+  --duplicate-bg: #ffe0ec;
+}
+
+html[data-theme="bw"] {
+  --green: #000000;
+  --blue: #000000;
+  --blue-light: #3a3a3a;
+  --gold: #6e6e6e;
+  --bg: #ffffff;
+  --card-bg: #ffffff;
+  --text: #000000;
+  --text-muted: #5a5a5a;
+  --border: #cfcfcf;
+  --missing-bg: #f2f2f2;
+  --missing-border: #cfcfcf;
+  --owned-bg: #e6e6e6;
+  --duplicate-bg: #d4d4d4;
+}
+
+html[data-theme="blue"] {
+  --green: #0d47a1;
+  --blue: #0d47a1;
+  --blue-light: #1976d2;
+  --gold: #0288d1;
+  --bg: #eaf2fb;
+  --card-bg: #ffffff;
+  --text: #0a2540;
+  --text-muted: #4a6b8a;
+  --border: #b8d4ec;
+  --missing-bg: #eef4fa;
+  --missing-border: #cfe0f0;
+  --owned-bg: #d3e5fa;
+  --duplicate-bg: #cceffd;
 }
 
 * { box-sizing: border-box; }
@@ -146,6 +245,16 @@ body {
   background: var(--card-bg);
   color: var(--text);
   font-size: 0.9rem;
+  width: 100%;
+}
+
+#theme-select {
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 0.85rem;
   width: 100%;
 }
 .filter-chips { display: flex; gap: 8px; overflow-x: auto; }

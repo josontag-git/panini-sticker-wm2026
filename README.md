@@ -16,6 +16,7 @@ Die Stickerliste basiert auf einer vom Nutzer bereitgestellten Checkliste: 48 Te
 - Suche und Filter-Chips helfen, schnell einzelne Teams oder Sticker-Nummern zu finden.
 - Im Tab **Listen** gibt es eine Fehlliste (zum Nachkaufen) und eine Tauschliste (Doppelte), beide mit "Kopieren"-Button.
 - Im Tab **Mehr** koennen Sicherungen exportiert/importiert und der Fortschritt zurueckgesetzt werden.
+- Im Tab **Mehr** unter "Design" laesst sich der Farbmodus waehlen: System (folgt der Geraete-Einstellung), Hell, Dunkel, Neon, Knallbunt, Black & White, Blue.
 
 ## Google Sheet einrichten (einmalig, optional)
 

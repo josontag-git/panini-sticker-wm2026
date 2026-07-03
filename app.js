@@ -3,9 +3,38 @@ const STORAGE_SCRIPT_URL = "panini-wm26-script-url";
 const STORAGE_DIRTY = "panini-wm26-dirty-v1";
 const STORAGE_PENDING_DELETES = "panini-wm26-pending-deletes-v1";
 const STORAGE_STICKERS = "panini-wm26-stickers-v1";
+const STORAGE_THEME = "panini-wm26-theme";
 const STATUS_CYCLE = { missing: "owned", owned: "duplicate", duplicate: "missing" };
 const STATUS_LABEL = { missing: "Fehlt", owned: "Habe", duplicate: "Doppelt" };
 const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby0hA1vkJIGtZdNwk7jdTrBHgLL5_sO2DXAnxh5NKOnC8gFJz8_KyTDSh_wGkC7ODM8/exec";
+const THEME_COLORS = {
+  system: "#1565c0",
+  light: "#1565c0",
+  dark: "#10140f",
+  neon: "#0a0014",
+  bunt: "#ff006e",
+  bw: "#000000",
+  blue: "#0d47a1",
+};
+
+function loadTheme() {
+  return localStorage.getItem(STORAGE_THEME) || "system";
+}
+
+function applyTheme(theme) {
+  if (theme === "system") {
+    document.documentElement.removeAttribute("data-theme");
+  } else {
+    document.documentElement.setAttribute("data-theme", theme);
+  }
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", THEME_COLORS[theme] || THEME_COLORS.system);
+}
+
+function setTheme(theme) {
+  localStorage.setItem(STORAGE_THEME, theme);
+  applyTheme(theme);
+}
 
 let state = loadState();
 let stickers = loadStickers();
@@ -733,6 +762,12 @@ document.getElementById("btn-admin-reset").addEventListener("click", () => {
   showToast("Stickerliste zurueckgesetzt");
 });
 
+// ---------- Settings: Design ----------
+
+document.getElementById("theme-select").addEventListener("change", (e) => {
+  setTheme(e.target.value);
+});
+
 // ---------- Settings: Google Sheet sync ----------
 
 document.getElementById("btn-save-script-url").addEventListener("click", () => {
@@ -913,6 +948,10 @@ function showToast(msg) {
 })();
 
 // ---------- Init ----------
+
+const currentTheme = loadTheme();
+applyTheme(currentTheme);
+document.getElementById("theme-select").value = currentTheme;
 
 buildAlbum();
 updateStats();

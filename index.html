@@ -10,6 +10,14 @@
 <link rel="icon" href="icons/favicon-32.png" />
 <link rel="apple-touch-icon" href="icons/icon-180.png" />
 <link rel="stylesheet" href="style.css" />
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("panini-wm26-theme");
+      if (t && t !== "system") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
 </head>
 <body>
 <div class="pull-refresh" id="pull-refresh">
@@ -90,6 +98,21 @@
   </section>
 
   <section id="tab-einstellungen" class="tab-panel">
+    <div class="list-card">
+      <h2>Design</h2>
+      <p class="list-card-sub">Farbmodus fuer die App auswaehlen.</p>
+      <div class="settings-row">
+        <select id="theme-select">
+          <option value="system">System</option>
+          <option value="light">Hell</option>
+          <option value="dark">Dunkel</option>
+          <option value="neon">Neon</option>
+          <option value="bunt">Knallbunt</option>
+          <option value="bw">Black &amp; White</option>
+          <option value="blue">Blue</option>
+        </select>
+      </div>
+    </div>
     <div class="list-card">
       <h2>Google Sheet</h2>
       <p class="list-card-sub">Das Sheet fuehrt die komplette Stickerliste (nicht nur den Sammelstatus) - Hinzufuegen, Bearbeiten und Loeschen im Admin-Bereich wird automatisch hochgeladen. Beim Oeffnen der App wird zusaetzlich automatisch mit dem Sheet abgeglichen, damit der Stand von anderen Geraeten uebernommen wird.</p>
