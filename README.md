@@ -35,8 +35,9 @@ Die Stickerliste basiert auf einer vom Nutzer bereitgestellten Checkliste: 48 Te
 2. Die kopierte Web-App-URL bei "Google Sheet" einfügen, "URL speichern" tippen.
 3. Ab jetzt wird jede Statusänderung (Fehlt/Habe/Doppelt) automatisch als Zeile ins Tabellenblatt "Sticker" geschrieben (anhand der Sticker-ID aktualisiert, keine Duplikate).
 4. Der Button "Jetzt synchronisieren" schickt alle noch nicht übertragenen Änderungen erneut (z. B. nach Offline-Nutzung).
+5. Der Button "Vom Sheet laden" holt den aktuellen Stand aus dem Sheet und übernimmt ihn lokal — das passiert auch automatisch beim Öffnen der App.
 
-Die Synchronisierung ist einseitig (Gerät → Sheet) und dient als Backup/Freigabe, z. B. um den Sammelstand mit anderen zu teilen. Ein Rücklesen aus dem Sheet in die App ist nicht vorgesehen.
+Die Synchronisierung ist zweiseitig: Änderungen werden zum Sheet hochgeladen, und beim Öffnen bzw. per "Vom Sheet laden" wird der Sheet-Stand auch wieder abgeglichen. So bleiben mehrere Geräte (z. B. Handy und Desktop) konsistent, solange beide mit demselben Sheet verbunden sind. Noch nicht hochgeladene lokale Änderungen werden beim Abgleich nicht überschrieben — synchronisiere daher zuerst, bevor du auf einem anderen Gerät weitersammelst.
 
 ## Hosting (GitHub Pages)
 

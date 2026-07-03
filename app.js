@@ -151,6 +151,33 @@ async function syncSticker(id) {
   }
 }
 
+async function pullFromSheet() {
+  const url = getScriptUrl();
+  if (!url) return false;
+  try {
+    const res = await fetch(url, { method: "GET" });
+    if (!res.ok) throw new Error("bad response");
+    const data = await res.json();
+    if (!data || !Array.isArray(data.stickers)) throw new Error("invalid payload");
+
+    const dirty = new Set(loadDirty());
+    let changed = false;
+    for (const row of data.stickers) {
+      // Noch nicht hochgeladene lokale Aenderungen haben Vorrang, damit
+      // ein Abgleich sie nicht ueberschreibt.
+      if (dirty.has(row.id)) continue;
+      if (statusOf(row.id) !== row.status) {
+        setStatus(row.id, row.status);
+        changed = true;
+      }
+    }
+    if (changed) rerenderAll();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function updateSyncStatus() {
   const el = document.getElementById("sync-status");
   if (!el) return;
@@ -567,6 +594,16 @@ document.getElementById("btn-sync-now").addEventListener("click", async () => {
   showToast("Synchronisierung abgeschlossen");
 });
 
+document.getElementById("btn-pull-sheet").addEventListener("click", async () => {
+  const url = getScriptUrl();
+  if (!url) {
+    showToast("Bitte zuerst die Apps-Script-URL speichern");
+    return;
+  }
+  const ok = await pullFromSheet();
+  showToast(ok ? "Stand vom Sheet geladen" : "Laden vom Sheet fehlgeschlagen");
+});
+
 // ---------- Settings: export / import / reset ----------
 
 document.getElementById("btn-export").addEventListener("click", () => {
@@ -629,6 +666,10 @@ applyFilters();
 renderAdmin();
 document.getElementById("script-url").value = getScriptUrl();
 updateSyncStatus();
+
+// Beim Start automatisch mit dem Sheet abgleichen, damit Aenderungen von
+// anderen Geraeten (z.B. Handy <-> Desktop) uebernommen werden.
+pullFromSheet();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
