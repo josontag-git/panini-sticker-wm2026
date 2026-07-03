@@ -1,4 +1,6 @@
 const STORAGE_KEY = "panini-wm26-state-v1";
+const STORAGE_SCRIPT_URL = "panini-wm26-script-url";
+const STORAGE_DIRTY = "panini-wm26-dirty-v1";
 const STATUS_CYCLE = { missing: "owned", owned: "duplicate", duplicate: "missing" };
 const STATUS_LABEL = { missing: "Fehlt", owned: "Habe", duplicate: "Doppelt" };
 
@@ -26,6 +28,83 @@ function setStatus(id, status) {
   if (status === "missing") delete state[id];
   else state[id] = status;
   saveState();
+}
+
+// ---------- Google Sheet Sync ----------
+
+function getScriptUrl() {
+  return localStorage.getItem(STORAGE_SCRIPT_URL) || "";
+}
+
+function setScriptUrl(url) {
+  localStorage.setItem(STORAGE_SCRIPT_URL, url);
+}
+
+function loadDirty() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_DIRTY)) || [];
+  } catch {
+    return [];
+  }
+}
+
+function saveDirty(ids) {
+  localStorage.setItem(STORAGE_DIRTY, JSON.stringify(ids));
+}
+
+function markDirty(id) {
+  const dirty = loadDirty();
+  if (!dirty.includes(id)) {
+    dirty.push(id);
+    saveDirty(dirty);
+  }
+  updateSyncStatus();
+}
+
+function clearDirty(id) {
+  saveDirty(loadDirty().filter((d) => d !== id));
+  updateSyncStatus();
+}
+
+async function syncSticker(id) {
+  const url = getScriptUrl();
+  if (!url) return;
+  const sticker = STICKERS.find((s) => s.id === id);
+  if (!sticker) return;
+  try {
+    await fetch(url, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        id: sticker.id,
+        number: sticker.number,
+        groupId: sticker.groupId,
+        teamName: sticker.teamName,
+        type: sticker.type,
+        label: sticker.label,
+        position: sticker.position || "",
+        status: statusOf(id),
+      }),
+    });
+    clearDirty(id);
+  } catch {
+    // bleibt als offen markiert, wird beim naechsten Sync erneut versucht
+  }
+}
+
+function updateSyncStatus() {
+  const el = document.getElementById("sync-status");
+  if (!el) return;
+  const url = getScriptUrl();
+  const pending = loadDirty().length;
+  if (!url) {
+    el.textContent = "Nicht verbunden.";
+  } else if (pending > 0) {
+    el.textContent = `Verbunden – ${pending} Sticker noch nicht synchronisiert.`;
+  } else {
+    el.textContent = "Verbunden – alles synchronisiert.";
+  }
 }
 
 // ---------- Album rendering ----------
@@ -103,6 +182,8 @@ function cycleSticker(id) {
   }
   updateStats();
   applyFilters();
+  markDirty(id);
+  syncSticker(id);
 }
 
 document.getElementById("groups").addEventListener("click", (e) => {
@@ -245,6 +326,32 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
   });
 });
 
+// ---------- Settings: Google Sheet sync ----------
+
+document.getElementById("btn-save-script-url").addEventListener("click", () => {
+  const input = document.getElementById("script-url");
+  setScriptUrl(input.value.trim());
+  updateSyncStatus();
+  showToast("Sheet-Verbindung gespeichert");
+});
+
+document.getElementById("btn-sync-now").addEventListener("click", async () => {
+  const url = getScriptUrl();
+  if (!url) {
+    showToast("Bitte zuerst die Apps-Script-URL speichern");
+    return;
+  }
+  const dirty = loadDirty();
+  if (!dirty.length) {
+    showToast("Bereits alles synchronisiert");
+    return;
+  }
+  for (const id of dirty) {
+    await syncSticker(id);
+  }
+  showToast("Synchronisierung abgeschlossen");
+});
+
 // ---------- Settings: export / import / reset ----------
 
 document.getElementById("btn-export").addEventListener("click", () => {
@@ -315,6 +422,8 @@ function showToast(msg) {
 buildAlbum();
 updateStats();
 applyFilters();
+document.getElementById("script-url").value = getScriptUrl();
+updateSyncStatus();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {

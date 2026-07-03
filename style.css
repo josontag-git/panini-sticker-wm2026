@@ -107,13 +107,14 @@ body {
 .tab-panel.active { display: block; }
 
 .toolbar { display: flex; flex-direction: column; gap: 10px; margin-bottom: 4px; }
-#search {
+#search, #script-url {
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--card-bg);
   color: var(--text);
   font-size: 0.9rem;
+  width: 100%;
 }
 .filter-chips { display: flex; gap: 8px; overflow-x: auto; }
 .chip {
