@@ -658,6 +658,86 @@ function showToast(msg) {
   toastTimer = setTimeout(() => (el.hidden = true), 2000);
 }
 
+// ---------- Pull-to-refresh: an oberster Stelle nach unten ziehen, um mit dem Sheet abzugleichen ----------
+
+(function setupPullToRefresh() {
+  const el = document.getElementById("pull-refresh");
+  if (!el) return;
+
+  const THRESHOLD = 68;
+  const MAX_PULL = 100;
+  let startY = null;
+  let pulling = false;
+  let refreshing = false;
+
+  function reset() {
+    el.classList.remove("dragging");
+    el.classList.add("snap");
+    el.style.transform = "";
+    el.dataset.ready = "0";
+    startY = null;
+    pulling = false;
+  }
+
+  document.addEventListener(
+    "touchstart",
+    (e) => {
+      if (refreshing || window.scrollY > 0) return;
+      startY = e.touches[0].clientY;
+      pulling = true;
+      el.classList.remove("snap");
+    },
+    { passive: true }
+  );
+
+  document.addEventListener(
+    "touchmove",
+    (e) => {
+      if (!pulling || startY === null || refreshing) return;
+      const delta = e.touches[0].clientY - startY;
+      if (window.scrollY > 0 || delta <= 0) {
+        reset();
+        return;
+      }
+      e.preventDefault();
+      const damped = Math.min(delta * 0.5, MAX_PULL);
+      el.classList.add("dragging");
+      el.style.transform = `translateY(${damped}px)`;
+      el.dataset.ready = damped >= THRESHOLD ? "1" : "0";
+    },
+    { passive: false }
+  );
+
+  document.addEventListener("touchend", async () => {
+    if (!pulling) return;
+    const ready = el.dataset.ready === "1";
+    pulling = false;
+    el.classList.remove("dragging");
+    el.classList.add("snap");
+
+    if (!ready) {
+      reset();
+      return;
+    }
+
+    refreshing = true;
+    el.classList.add("loading");
+    el.style.transform = `translateY(${THRESHOLD}px)`;
+
+    const url = getScriptUrl();
+    if (!url) {
+      showToast("Keine Sheet-Verbindung eingerichtet");
+    } else {
+      const ok = await pullFromSheet();
+      showToast(ok ? "Stand aktualisiert" : "Sheet nicht erreichbar");
+    }
+
+    el.classList.remove("loading");
+    reset();
+    refreshing = false;
+  });
+})();
+
 // ---------- Init ----------
 
 buildAlbum();

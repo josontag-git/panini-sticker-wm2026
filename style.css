@@ -41,6 +41,38 @@ body {
   background: var(--bg);
   color: var(--text);
   padding-bottom: calc(64px + var(--safe-bottom));
+  overscroll-behavior-y: contain;
+}
+
+.pull-refresh {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px));
+  left: 0;
+  right: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-56px);
+  z-index: 200;
+  pointer-events: none;
+}
+.pull-refresh.dragging { transition: none; }
+.pull-refresh.snap { transition: transform 0.2s ease; }
+.pull-refresh-spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid var(--border);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  background: var(--card-bg);
+  transition: border-color 0.15s ease;
+}
+.pull-refresh[data-ready="1"] .pull-refresh-spinner { border-top-color: var(--gold); }
+.pull-refresh.loading .pull-refresh-spinner { animation: pull-refresh-spin 0.7s linear infinite; }
+
+@keyframes pull-refresh-spin {
+  to { transform: rotate(360deg); }
 }
 
 .app-header {
