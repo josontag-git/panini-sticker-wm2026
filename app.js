@@ -227,7 +227,14 @@ async function pullFromSheet() {
       // haben Vorrang, damit ein Abgleich sie nicht ueberschreibt.
       if (dirty.has(row.id) || pendingDeletes.has(row.id)) continue;
 
-      if (row.deleted) {
+      // Aeltere Code.gs-Deployments liefern nur {id, status} zurueck (kein
+      // Titel/Bereich/Kapitel/Geloescht). Ohne diese Pruefung wuerden fehlende
+      // Felder lokale Sticker-Definitionen mit Leerstrings ueberschreiben.
+      // Solange nicht auf die neue Version aktualisiert wurde, wird daher nur
+      // der Status abgeglichen.
+      const hasFullDefinition = "title" in row && "area" in row && "section" in row;
+
+      if (hasFullDefinition && row.deleted) {
         if (stickers.some((s) => s.id === row.id)) {
           stickers = stickers.filter((s) => s.id !== row.id);
           changed = true;
@@ -236,25 +243,27 @@ async function pullFromSheet() {
         continue;
       }
 
-      const remoteDef = {
-        id: row.id,
-        number: row.number || row.id,
-        title: row.title || "",
-        area: row.area || "",
-        type: row.type || "-",
-        section: row.section || row.area || "",
-      };
-      const idx = stickers.findIndex((s) => s.id === row.id);
-      if (idx === -1) {
-        // Auf einem anderen Geraet neu angelegter Sticker.
-        stickers.push(remoteDef);
-        changed = true;
-      } else {
-        const local = stickers[idx];
-        const defChanged = ADMIN_FIELDS.some((field) => local[field] !== remoteDef[field]);
-        if (defChanged) {
-          stickers[idx] = remoteDef;
+      if (hasFullDefinition) {
+        const remoteDef = {
+          id: row.id,
+          number: row.number || row.id,
+          title: row.title || "",
+          area: row.area || "",
+          type: row.type || "-",
+          section: row.section || row.area || "",
+        };
+        const idx = stickers.findIndex((s) => s.id === row.id);
+        if (idx === -1) {
+          // Auf einem anderen Geraet neu angelegter Sticker.
+          stickers.push(remoteDef);
           changed = true;
+        } else {
+          const local = stickers[idx];
+          const defChanged = ADMIN_FIELDS.some((field) => local[field] !== remoteDef[field]);
+          if (defChanged) {
+            stickers[idx] = remoteDef;
+            changed = true;
+          }
         }
       }
 
